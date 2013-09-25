@@ -153,6 +153,9 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
     int slideDelay = 1000;
     Uint8 sliding = 0;
 
+    // fast drop (is user holding moveDown key?)
+    int fastDrop = 0;
+
     // program main loop
     int done = 0;
     while (!done)
@@ -167,6 +170,11 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
                 // exit if the window is closed
             case SDL_QUIT:
                 done = 1;
+                break;
+
+            case SDL_KEYUP:
+                if (event.key.keysym.sym == SDLK_DOWN)
+                    fastDrop = 0;
                 break;
 
                 // check for keypresses
@@ -188,6 +196,7 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
                     ticks=SDL_GetTicks();
                     //1 point per cell for a softdrop
                     score+=movePieceDown(&testPiece,&testGrid);
+                    fastDrop=1;
                     break;
                 case SDLK_LEFT:
                     movePieceLeft(&testPiece,&testGrid);
@@ -251,6 +260,9 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             MSDelay=125;
             break;
         }
+
+        if (fastDrop)
+            MSDelay=50;
 
         if (SDL_GetTicks()-ticks>MSDelay)
         {
