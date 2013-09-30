@@ -39,8 +39,10 @@ int main ( int argc, char** argv )
     int done = 0;
     while (!done)
     {
-
-        drawString("Enter LEVEL 0-9 or ESC to QUIT \1",screen,100,screen->h/2);
+        drawString("\1 Left/Right arrow moves left/right P: pause",screen,30,screen->h/2-36);
+        drawString("\1 Z: rotate left, Up arrow: rotate right",screen,30,screen->h/2-24);
+        drawString("\1 Space: hard drop, Down arrow: soft drop",screen,30,screen->h/2-12);
+        drawString("\1 Press 0 1 2 3 4 5 6 7 8 or 9 to start",screen,30,screen->h/2);
 
         SDL_Flip(screen);
 
@@ -110,6 +112,7 @@ int main ( int argc, char** argv )
                 }
             }
             }
+            resetPieceLists();
         }
     }
 
@@ -118,11 +121,15 @@ int main ( int argc, char** argv )
 
 void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
 {
+    //screen rectangle
+    SDL_Rect screenrect= {0,0,screen->w,screen->h};
+
     int MSDelay; //millisecond delay
+    const int slideDelay=1500; //delay before automatically locking a piece to the grid
 
     // Surface for drawing tetris grid
     SDL_Surface *tetrisGrid = SDL_CreateRGBSurface(0,(GRIDXSIZE*BLOCKSIZE)+1,(GRIDYSIZE*BLOCKSIZE)+1,32,0,0,0,0);
-    SDL_Rect tetrisRect = {BLOCKSIZE*3,0,tetrisGrid->w,tetrisGrid->h};
+    SDL_Rect tetrisRect = {BLOCKSIZE*3+BLOCKSIZE/2,0,tetrisGrid->w,tetrisGrid->h};
 
     // spawn a piece
     Piece testPiece;
@@ -149,15 +156,19 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
     // millisecond tracking variable
     int ticks=SDL_GetTicks();
 
-    // slide lock variables
-    int slideDelay = 1000;
-    Uint8 sliding = 0;
-
     // fast drop (is user holding moveDown key?)
     int fastDrop = 0;
 
+    // hold piece
+    Uint8 swapped = 0; //set to 1 when hold is used for the first time
+    Uint8 swappable = 0; //set to 0 when hold is used, 1 when hold piece is locked into the grid
+    Piece holdPiece;
+    createPiece(&holdPiece,0,BLOCKSIZE,BLOCKSIZE*7.5);
+    Piece bufferPiece;
+
     // program main loop
-    int done = 0;
+    Uint8 done = 0;
+    Uint8 paused = 0;
     while (!done)
     {
         // message processing loop
@@ -184,44 +195,74 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     done = 1;
 
-                switch (event.key.keysym.sym)
+                else if (event.key.keysym.sym == SDLK_p)
                 {
-                case SDLK_z:
-                    rotatePieceLeft(&testPiece,&testGrid);
-                    break;
-                case SDLK_UP:
-                    rotatePieceRight(&testPiece,&testGrid);
-                    break;
-                case SDLK_DOWN:
-                    ticks=SDL_GetTicks();
-                    //1 point per cell for a softdrop
-                    score+=movePieceDown(&testPiece,&testGrid);
-                    fastDrop=1;
-                    break;
-                case SDLK_LEFT:
-                    movePieceLeft(&testPiece,&testGrid);
-                    break;
-                case SDLK_RIGHT:
-                    movePieceRight(&testPiece,&testGrid);
-                    break;
-                case SDLK_SPACE:
-                    ticks=0;
-                    dropTest=dropPiece(&testPiece,&testGrid,tetrisGrid,&score,level);
-                    if (dropTest<0)
+                    if (paused)
+                        paused=0;
+                    else
+                        paused=1;
+                }
+
+                if (!paused)
+                {
+                    switch (event.key.keysym.sym)
                     {
-                        done=1;
+                    case SDLK_LSHIFT: //swap holdpiece
+                        if (!swapped)
+                        {
+                            swapped=1;
+                            holdPiece.type=testPiece.type;
+                            holdPiece.direction=RIGHT;
+                            spawnPiece(&testPiece,getPiece(dropped));
+                            dropped++;
+                        }
+                        else if (swappable)
+                        {
+                            bufferPiece.type=testPiece.type;
+                            testPiece.type=holdPiece.type;
+                            holdPiece.type=bufferPiece.type;
+                            spawnPiece(&testPiece,testPiece.type);
+                            swappable=0;
+                        }
+                        break;
+                    case SDLK_z:
+                        rotatePieceLeft(&testPiece,&testGrid);
+                        break;
+                    case SDLK_UP:
+                        rotatePieceRight(&testPiece,&testGrid);
+                        break;
+                    case SDLK_DOWN:
+                        ticks=SDL_GetTicks();
+                        //1 point per cell for a softdrop
+                        score+=movePieceDown(&testPiece,&testGrid);
+                        fastDrop=1;
+                        break;
+                    case SDLK_LEFT:
+                        movePieceLeft(&testPiece,&testGrid);
+                        break;
+                    case SDLK_RIGHT:
+                        movePieceRight(&testPiece,&testGrid);
+                        break;
+                    case SDLK_SPACE:
+                        ticks=0;
+                        dropTest=dropPiece(&testPiece,&testGrid,tetrisGrid,&score,level);
+                        if (dropTest<0)
+                        {
+                            done=1;
+                            break;
+                        }
+                        lines+=dropTest;
+                        spawnPiece(&testPiece,getPiece(dropped));
+                        dropped++;
+                        swappable=1;
+                        break;
+                    default:
                         break;
                     }
-                    lines+=dropTest;
-                    spawnPiece(&testPiece,getPiece(dropped));
-                    dropped++;
-                    break;
-                default:
                     break;
                 }
-                break;
             }
-            } // end switch
+            }// end switch
         } // end of message processing
 
 
@@ -254,40 +295,45 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             MSDelay=225;
             break;
         case 8:
-            MSDelay=175;
+            MSDelay=150;
             break;
         case 9:
-            MSDelay=125;
+            MSDelay=100;
             break;
         }
 
         if (fastDrop)
             MSDelay=50;
 
-        if (SDL_GetTicks()-ticks>MSDelay)
+        if (SDL_GetTicks()-ticks>MSDelay&&!paused)
         {
             if (!movePieceDown(&testPiece,&testGrid))
             {
-                dropTest=dropPiece(&testPiece,&testGrid,tetrisGrid,&score,level);
-                if (dropTest<0)
+                if (SDL_GetTicks()-ticks>slideDelay)
                 {
-                    done=1;
-                    break;
+                    dropTest=dropPiece(&testPiece,&testGrid,tetrisGrid,&score,level);
+                    if (dropTest<0)
+                    {
+                        done=1;
+                        break;
+                    }
+                    spawnPiece(&testPiece,getPiece(dropped));
+                    dropped++;
+                    swappable=1;
+                    ticks=SDL_GetTicks();
                 }
-                spawnPiece(&testPiece,getPiece(dropped));
-                dropped++;
             }
-            ticks=SDL_GetTicks();
+            else
+                ticks=SDL_GetTicks();
         }
 
         // DRAWING STARTS HERE
 
         // CLEAR DRAWING AREA
 
-        SDL_Rect screenrect= {0,0,screen->w,screen->h};
         SDL_FillRect(screen,&screenrect,SDL_MapRGB(screen->format, 0, 0, 0));
 
-        // DRAW GRID AND PIECES
+        // DRAW GRID AND PIECE THAT PLAYER IS CURRENTLY CONTROLLING
 
         drawGame(&testGrid,&testPiece,NOTHING,tetrisGrid,&score,level);
         SDL_BlitSurface(tetrisGrid,0,screen,&tetrisRect);
@@ -304,6 +350,7 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
         for (i=0; i<5; i++)
             drawPiece(&nextFive[i],screen);
 
+        //Draw Scoring information
         if (level<9)
             level=(lines/10)+startingLevel;
 
@@ -316,6 +363,17 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
         drawString("Lines:",screen,0,48);
         sprintf(scoreString,"%i",lines);
         drawString(scoreString,screen,0,60);
+
+        //Draw hold piece information
+
+        drawString("Holding:",screen,0,84);
+        if (swapped)
+            drawPiece(&holdPiece,screen);
+
+        //Display pause state
+
+        if (paused)
+            drawString("(P)aused",screen,screen->w/2,screen->h/2);
 
         // DRAWING ENDS HERE
 

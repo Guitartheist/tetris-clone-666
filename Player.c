@@ -1,5 +1,26 @@
 #include "Player.h"
 
+///////////////////////////////////////////////////////////////////////
+//
+// Function: drawGame                                         
+//                                                                   
+// Description:
+//    Draw a game to the provided surface after performing the specified
+//    action and updating the provided score.           
+//                                                                
+// Parameters:  
+//    grid: a tetris grid
+//    piece: the active tetromino
+//    action: the action to be performed before drawing
+//    surface: the SDL_Surface to draw upon
+//    score: the current score of the game, modified if a piece is
+//        locked into place on the grid.
+//    level: the current level of difficulty, used as a score multiplier       
+//                                                       
+// Returns:  
+//    returnVal : description of what is returned to caller
+//                                                                     
+///////////////////////////////////////////////////////////////////////
 void drawGame(Grid* grid, Piece* piece, enum Action action, SDL_Surface* screen,int *score, int level)
 {
     switch (action)

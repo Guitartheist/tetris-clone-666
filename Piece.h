@@ -25,6 +25,7 @@ struct PieceList
 };
 
 int roll(int maximum);
+void resetPieceLists();
 
 int getPiece(int piece);
 void rollPieceSet(); //roll a set of 7 pieces
