@@ -39,6 +39,8 @@ int main ( int argc, char** argv )
     int done = 0;
     while (!done)
     {
+        resetPieceLists();
+
         drawString("\1 Left/Right arrow moves left/right P: pause",screen,30,screen->h/2-36);
         drawString("\1 Z: rotate left, Up arrow: rotate right",screen,30,screen->h/2-24);
         drawString("\1 Space: hard drop, Down arrow: soft drop",screen,30,screen->h/2-12);
@@ -112,7 +114,6 @@ int main ( int argc, char** argv )
                 }
             }
             }
-            resetPieceLists();
         }
     }
 

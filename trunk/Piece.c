@@ -15,14 +15,22 @@ PieceList *nextPiece = 0;
 
 int numberOfPieces = 0;
 
-//Reset list of pieces
+//Reset list of pieces, free memory
 void resetPieceLists()
 {
-    free(allPieces);
-    free(nextPiece);
-    allPieces=0;
-    nextPiece=0;
-    rollPieceSet();
+    if (allPieces!=0)
+    {
+        PieceList *temp=allPieces;
+        while (allPieces->next!=0)
+        {
+            temp=allPieces;
+            allPieces=allPieces->next;
+            free(temp);
+        }
+        allPieces=0;
+        nextPiece=0;
+        rollPieceSet();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -48,7 +56,7 @@ int getPiece(int piece)
     if (piece+1>=numberOfPieces)
         rollPieceSet();
     findPiece = allPieces;
-    for (i=0;i<piece;i++)
+    for (i=0; i<piece; i++)
         findPiece=findPiece->next;
     return findPiece->val;
 }
