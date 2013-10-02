@@ -9,7 +9,7 @@ void drawString(char *toDraw ,SDL_Surface* screen, int x, int y)
     SDL_Rect background = {x,y,strlen(toDraw)*8,12};
     SDL_FillRect(screen,&background,SDL_MapRGB(screen->format,0,0,0));
     for (i=0;toDraw[i]!='\0';i++)
-        drawChar(toDraw[i],screen,x+(i*8),y);
+        drawChar(toDraw[i],screen,x+(i*CHARWIDTH),y);
 }
 
 void drawChar(char toDraw ,SDL_Surface* screen, int x, int y)

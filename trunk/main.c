@@ -41,9 +41,9 @@ int main ( int argc, char** argv )
     {
         resetPieceLists();
 
-        drawString("\1 Left/Right arrow moves left/right P: pause",screen,30,screen->h/2-36);
-        drawString("\1 Z: rotate left, Up arrow: rotate right",screen,30,screen->h/2-24);
-        drawString("\1 Space: hard drop, Down arrow: soft drop",screen,30,screen->h/2-12);
+        drawString("\1 Left/Right arrow moves left/right P: pause",screen,30,screen->h/2-CHARHEIGHT*3);
+        drawString("\1 Z: rotate left, Up arrow: rotate right",screen,30,screen->h/2-CHARHEIGHT*2);
+        drawString("\1 Space: hard drop, Down arrow: soft drop",screen,30,screen->h/2-CHARHEIGHT);
         drawString("\1 Press 0 1 2 3 4 5 6 7 8 or 9 to start",screen,30,screen->h/2);
 
         SDL_Flip(screen);
@@ -357,17 +357,17 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
 
         drawString("Level:",screen,0,0);
         sprintf(scoreString,"%i",level);
-        drawString(scoreString,screen,0,12);
-        drawString("Score:",screen,0,24);
+        drawString(scoreString,screen,0,CHARHEIGHT);
+        drawString("Score:",screen,0,CHARHEIGHT*2);
         sprintf(scoreString,"%i",score);
-        drawString(scoreString,screen,0,36);
-        drawString("Lines:",screen,0,48);
+        drawString(scoreString,screen,0,CHARHEIGHT*3);
+        drawString("Lines:",screen,0,CHARHEIGHT*4);
         sprintf(scoreString,"%i",lines);
-        drawString(scoreString,screen,0,60);
+        drawString(scoreString,screen,0,CHARHEIGHT*5);
 
         //Draw hold piece information
 
-        drawString("Holding:",screen,0,84);
+        drawString("Holding:",screen,0,CHARHEIGHT*7);
         if (swapped)
             drawPiece(&holdPiece,screen);
 
