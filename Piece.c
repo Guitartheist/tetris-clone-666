@@ -29,6 +29,7 @@ void resetPieceLists()
         }
         allPieces=0;
         nextPiece=0;
+        numberOfPieces=0;
         rollPieceSet();
     }
 }
