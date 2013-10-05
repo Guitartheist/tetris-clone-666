@@ -67,8 +67,8 @@ int getPiece(int piece)
 // Function: rollPieceSet                                        
 //                                                                   
 // Description:
-//    Generate 7 new tetrominos, no duplicates, and add them to the
-//    allPieces linked list.
+//    Generate 7 new tetrominos in random order (1 of each shape)
+//    Add the new tetrominos to the PieceList
 //                                                                     
 ///////////////////////////////////////////////////////////////////////
 void rollPieceSet()
