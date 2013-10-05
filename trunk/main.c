@@ -9,6 +9,9 @@
 
 void singlePlayerLoop(SDL_Surface* ,int );
 
+//process a dropped piece, return 0 if game is over
+int scoreDrop(Piece *piece, Grid *grid, SDL_Surface *surface, int *score, int *lines, int *dropped, int level, Uint8 *swappable);
+
 int main ( int argc, char** argv )
 {
     // seed random number generator
@@ -136,9 +139,6 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
     Piece testPiece;
     spawnPiece(&testPiece,getPiece(0));
 
-    // buffer for processing dropPiece
-    int dropTest=0;
-
     // number of pieces dropped so far
     int dropped=1;
 
@@ -245,17 +245,12 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
                         movePieceRight(&testPiece,&testGrid);
                         break;
                     case SDLK_SPACE:
-                        ticks=0;
-                        dropTest=dropPiece(&testPiece,&testGrid,tetrisGrid,&score,level);
-                        if (dropTest<0)
+                        if (!scoreDrop(&testPiece,&testGrid,tetrisGrid,&score,&lines,&dropped,level,&swappable))
                         {
                             done=1;
                             break;
                         }
-                        lines+=dropTest;
-                        spawnPiece(&testPiece,getPiece(dropped));
-                        dropped++;
-                        swappable=1;
+                        ticks=SDL_GetTicks();
                         break;
                     default:
                         break;
@@ -266,44 +261,23 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             }// end switch
         } // end of message processing
 
+        level=(lines/10)+startingLevel;
 
-
-        switch (level)
+        MSDelay=1000;
+        int loop=0;
+        while (loop<=level)
         {
-        default:
-        case 0:
-            MSDelay=1000;
-            break;
-        case 1:
-            MSDelay=800;
-            break;
-        case 2:
-            MSDelay=600;
-            break;
-        case 3:
-            MSDelay=525;
-            break;
-        case 4:
-            MSDelay=450;
-            break;
-        case 5:
-            MSDelay=375;
-            break;
-        case 6:
-            MSDelay=300;
-            break;
-        case 7:
-            MSDelay=225;
-            break;
-        case 8:
-            MSDelay=150;
-            break;
-        case 9:
-            MSDelay=100;
-            break;
+            int temp=MSDelay/5;
+            MSDelay-=temp;
+            loop++;
         }
 
         if (fastDrop)
+        {
+            MSDelay=50;
+        }
+
+        if (MSDelay<50)
             MSDelay=50;
 
         if (SDL_GetTicks()-ticks>MSDelay&&!paused)
@@ -312,20 +286,20 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             {
                 if (SDL_GetTicks()-ticks>slideDelay)
                 {
-                    dropTest=dropPiece(&testPiece,&testGrid,tetrisGrid,&score,level);
-                    if (dropTest<0)
+                    if (!scoreDrop(&testPiece,&testGrid,tetrisGrid,&score,&lines,&dropped,level,&swappable))
                     {
                         done=1;
                         break;
                     }
-                    spawnPiece(&testPiece,getPiece(dropped));
-                    dropped++;
-                    swappable=1;
                     ticks=SDL_GetTicks();
                 }
             }
             else
+            {
+                if (fastDrop)
+                    score+=1;
                 ticks=SDL_GetTicks();
+            }
         }
 
         // DRAWING STARTS HERE
@@ -352,8 +326,6 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             drawPiece(&nextFive[i],screen);
 
         //Draw Scoring information
-        if (level<9)
-            level=(lines/10)+startingLevel;
 
         drawString("Level:",screen,0,0);
         sprintf(scoreString,"%i",level);
@@ -381,5 +353,17 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
         // finally, update the screen :)
         SDL_Flip(screen);
     } // end main loop
+}
+
+int scoreDrop(Piece *piece, Grid *grid, SDL_Surface *surface, int *score, int *lines, int *dropped, int level, Uint8 *swappable)
+{
+    int dropTest = dropPiece(piece,grid,surface,score,level);
+    if (dropTest<0)
+        return 0;
+    *lines+=dropTest;
+    spawnPiece(piece,getPiece(*dropped));
+    *dropped+=1;
+    *swappable=1;
+    return 1;
 }
 
