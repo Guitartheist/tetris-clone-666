@@ -129,7 +129,7 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
     SDL_Rect screenrect= {0,0,screen->w,screen->h};
 
     int MSDelay; //millisecond delay
-    const int slideDelay=1500; //delay before automatically locking a piece to the grid
+    const int slideDelay=1000; //delay before automatically locking a piece to the grid
 
     // Surface for drawing tetris grid
     SDL_Surface *tetrisGrid = SDL_CreateRGBSurface(0,(GRIDXSIZE*BLOCKSIZE)+1,(GRIDYSIZE*BLOCKSIZE)+1,32,0,0,0,0);
@@ -272,13 +272,10 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             loop++;
         }
 
-        if (fastDrop)
+        if (fastDrop&&MSDelay>50)
         {
             MSDelay=50;
         }
-
-        if (MSDelay<50)
-            MSDelay=50;
 
         if (SDL_GetTicks()-ticks>MSDelay&&!paused)
         {
@@ -355,6 +352,8 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
     } // end main loop
 }
 
+//Return 0 if dropping the latest piece has ended the game
+//Return 1 if game should continue
 int scoreDrop(Piece *piece, Grid *grid, SDL_Surface *surface, int *score, int *lines, int *dropped, int level, Uint8 *swappable)
 {
     int dropTest = dropPiece(piece,grid,surface,score,level);
