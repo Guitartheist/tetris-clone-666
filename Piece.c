@@ -166,7 +166,7 @@ void rotatePieceRight(Piece* piece, Grid* grid)
 {
     int i;
     Piece collisionTest;
-    Uint8 coords[8];
+    int coords[8];
     collisionTest.x=piece->x;
     collisionTest.y=piece->y;
     collisionTest.type=piece->type;
@@ -186,17 +186,56 @@ void rotatePieceRight(Piece* piece, Grid* grid)
         break;
     }
     getPieceCollision(&collisionTest,coords);
+
+    //If the piece has collided with grid edges or another piece the rotation fails
+    int rotateFail = 0;
     for (i=0; i<7; i+=2)
     {
         if (coords[i]>=GRIDXSIZE)
-            return;
+            rotateFail+=BLOCKSIZE;
         if (coords[i+1]>=GRIDYSIZE)
-            return;
+            rotateFail+=BLOCKSIZE;
         if (coords[i]<0||coords[i+1]<0)
-            return;
+            rotateFail+=BLOCKSIZE;
         if (grid->grid[coords[i]][coords[i+1]].position.x>=0)
-            return;
+            rotateFail+=BLOCKSIZE;
     }
+    //Try moving the piece up one space and performing the rotation
+    if (rotateFail!=0)
+    {
+        collisionTest.y-=BLOCKSIZE;
+        getPieceCollision(&collisionTest,coords);
+        //If the rotation still fails, try one more higher
+        for (i=0; i<7; i+=2)
+        {
+            if (coords[i]>=GRIDXSIZE)
+                rotateFail+=BLOCKSIZE;
+            if (coords[i+1]>=GRIDYSIZE)
+                rotateFail+=BLOCKSIZE;
+            if (coords[i]<0||coords[i+1]<0)
+                rotateFail+=BLOCKSIZE;
+            if (grid->grid[coords[i]][coords[i+1]].position.x>=0)
+                rotateFail+=BLOCKSIZE;
+        }
+    }
+    if (rotateFail>BLOCKSIZE)
+    {
+        collisionTest.y-=BLOCKSIZE;
+        getPieceCollision(&collisionTest,coords);
+        //If the rotation still fails, do not perform the rotation at all
+        for (i=0; i<7; i+=2)
+        {
+            if (coords[i]>=GRIDXSIZE)
+                return;
+            if (coords[i+1]>=GRIDYSIZE)
+                return;
+            if (coords[i]<0||coords[i+1]<0)
+                return;
+            if (grid->grid[coords[i]][coords[i+1]].position.x>=0)
+                return;
+        }
+    }
+    piece->y-=rotateFail;
     switch (piece->direction)
     {
     case UP:
@@ -220,7 +259,7 @@ void rotatePieceLeft(Piece* piece, Grid* grid)
 {
     int i;
     Piece collisionTest;
-    Uint8 coords[8];
+    int coords[8];
     collisionTest.x=piece->x;
     collisionTest.y=piece->y;
     collisionTest.type=piece->type;
@@ -240,17 +279,56 @@ void rotatePieceLeft(Piece* piece, Grid* grid)
         break;
     }
     getPieceCollision(&collisionTest,coords);
+
+    //If the piece has collided with grid edges or another piece the rotation fails
+    int rotateFail = 0;
     for (i=0; i<7; i+=2)
     {
         if (coords[i]>=GRIDXSIZE)
-            return;
+            rotateFail+=BLOCKSIZE;
         if (coords[i+1]>=GRIDYSIZE)
-            return;
+            rotateFail+=BLOCKSIZE;
         if (coords[i]<0||coords[i+1]<0)
-            return;
+            rotateFail+=BLOCKSIZE;
         if (grid->grid[coords[i]][coords[i+1]].position.x>=0)
-            return;
+            rotateFail+=BLOCKSIZE;
     }
+    //Try moving the piece up one space and performing the rotation
+    if (rotateFail!=0)
+    {
+        collisionTest.y-=BLOCKSIZE;
+        getPieceCollision(&collisionTest,coords);
+        //If the rotation still fails, try one more higher
+        for (i=0; i<7; i+=2)
+        {
+            if (coords[i]>=GRIDXSIZE)
+                rotateFail+=BLOCKSIZE;
+            if (coords[i+1]>=GRIDYSIZE)
+                rotateFail+=BLOCKSIZE;
+            if (coords[i]<0||coords[i+1]<0)
+                rotateFail+=BLOCKSIZE;
+            if (grid->grid[coords[i]][coords[i+1]].position.x>=0)
+                rotateFail+=BLOCKSIZE;
+        }
+    }
+    if (rotateFail>BLOCKSIZE)
+    {
+        collisionTest.y-=BLOCKSIZE;
+        getPieceCollision(&collisionTest,coords);
+        //If the rotation still fails, do not perform the rotation at all
+        for (i=0; i<7; i+=2)
+        {
+            if (coords[i]>=GRIDXSIZE)
+                return;
+            if (coords[i+1]>=GRIDYSIZE)
+                return;
+            if (coords[i]<0||coords[i+1]<0)
+                return;
+            if (grid->grid[coords[i]][coords[i+1]].position.x>=0)
+                return;
+        }
+    }
+    piece->y-=rotateFail;
     switch (piece->direction)
     {
     case UP:
@@ -268,13 +346,13 @@ void rotatePieceLeft(Piece* piece, Grid* grid)
     }
 }
 
-//If and operation is possible on the specified grid
-//Perform the operation on a the specified piece
+//If an operation is possible on the specified grid
+//Perform the operation on the specified piece
 void movePieceRight(Piece* piece, Grid* grid)
 {
     int i;
     Piece collisionTest;
-    Uint8 coords[8];
+    int coords[8];
     collisionTest.x=piece->x+BLOCKSIZE;
     collisionTest.y=piece->y;
     collisionTest.type=piece->type;
@@ -294,13 +372,13 @@ void movePieceRight(Piece* piece, Grid* grid)
     piece->x=collisionTest.x;
 }
 
-//If and operation is possible on the specified grid
-//Perform the operation on a the specified piece
+//If an operation is possible on the specified grid
+//Perform the operation on a specified piece
 void movePieceLeft(Piece* piece, Grid* grid)
 {
     int i;
     Piece collisionTest;
-    Uint8 coords[8];
+    int coords[8];
     collisionTest.x=piece->x-BLOCKSIZE;
     collisionTest.y=piece->y;
     collisionTest.type=piece->type;
@@ -320,13 +398,13 @@ void movePieceLeft(Piece* piece, Grid* grid)
     piece->x=collisionTest.x;
 }
 
-//If and operation is possible on the specified grid
-//Perform the operation on a the specified piece
+//If an operation is possible on the specified grid
+//Perform the operation on the specified piece
 int movePieceDown(Piece* piece, Grid* grid)
 {
     int i;
     Piece collisionTest;
-    Uint8 coords[8];
+    int coords[8];
     collisionTest.x=piece->x;
     collisionTest.y=piece->y+BLOCKSIZE;
     collisionTest.type=piece->type;
@@ -347,12 +425,12 @@ int movePieceDown(Piece* piece, Grid* grid)
     return 1;
 }
 
-//If and operation is possible on the specified grid
-//Perform the operation on a the specified piece
+//If an operation is possible on the specified grid
+//Perform the operation on the specified piece
 int dropPiece(Piece* piece, Grid* grid,SDL_Surface *screen,int *score,int level)
 {
     Block block[4];
-    Uint8 coords[8];
+    int coords[8];
     enum Color dropColor;
 
     //2 points per cell for a hard drop
@@ -424,8 +502,8 @@ int dropPiece(Piece* piece, Grid* grid,SDL_Surface *screen,int *score,int level)
         return -1;
 }
 
-//If and operation is possible on the specified grid
-//Perform the operation on a the specified piece
+//If an operation is possible on the specified grid
+//Perform the operation on the specified piece
 void drawPiece(Piece* const piece, SDL_Surface* screen)
 {
     Block a,b,c,d;
@@ -627,7 +705,7 @@ void drawPiece(Piece* const piece, SDL_Surface* screen)
 //      piece : The tetromino to measure
 //      coordinates : An array to hold the x y coordinates this tetromino occupies
 ////////////////////////////////////////////////////////////////////////////////
-void getPieceCollision(Piece* const piece, Uint8 coordinates[8])
+void getPieceCollision(Piece* const piece, int coordinates[8])
 {
     switch (piece->type)
     {
