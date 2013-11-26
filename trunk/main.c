@@ -59,7 +59,7 @@ int main ( int argc, char** argv )
             {
                 // exit if the window is closed
             case SDL_QUIT:
-                done = 1;
+                exit(0);
                 break;
 
                 // check for keypresses
@@ -159,6 +159,16 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
 
     // fast drop (is user holding moveDown key?)
     int fastDrop = 0;
+    // fast slide (is user holding down a lateral motion key?)
+    int fastSlide = 0; //-1 moves left, 1 moves right
+    //-2 moves right when left is released
+    //2 moves left when right is released
+
+    //MS delay for fast drop or slide
+    const int dropWait = 50;
+    const int slideWait = 100;
+
+    int slideTime = 0; //slide time is measured against SDL_GetTicks() to calibrate movement speed
 
     // hold piece
     Uint8 swapped = 0; //set to 1 when hold is used for the first time
@@ -181,12 +191,34 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             {
                 // exit if the window is closed
             case SDL_QUIT:
-                done = 1;
+                exit(0);
                 break;
 
             case SDL_KEYUP:
-                if (event.key.keysym.sym == SDLK_DOWN)
-                    fastDrop = 0;
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_DOWN:
+                        fastDrop = 0;
+                        break;
+
+                    case SDLK_LEFT:
+                        if (fastSlide == -2)
+                            fastSlide = 1;
+                        else
+                            fastSlide = 0;
+                        break;
+
+                    case SDLK_RIGHT:
+                        if (fastSlide == 2)
+                            fastSlide = -1;
+                        else
+                            fastSlide = 0;
+                        break;
+
+                    default:
+                        break;
+                }
+
                 break;
 
                 // check for keypresses
@@ -194,7 +226,10 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             {
                 // exit if ESCAPE is pressed
                 if (event.key.keysym.sym == SDLK_ESCAPE)
-                    done = 1;
+                    if (paused)
+                        done = 1;
+                    else
+                        paused = 1;
 
                 else if (event.key.keysym.sym == SDLK_p)
                 {
@@ -239,10 +274,20 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
                         fastDrop=1;
                         break;
                     case SDLK_LEFT:
+                        slideTime = SDL_GetTicks();
                         movePieceLeft(&testPiece,&testGrid);
+                        if (fastSlide == 0)
+                            fastSlide = -1;
+                        else if (fastSlide == 1)
+                            fastSlide = -2;
                         break;
                     case SDLK_RIGHT:
+                        slideTime = SDL_GetTicks();
                         movePieceRight(&testPiece,&testGrid);
+                        if (fastSlide == 0)
+                            fastSlide = 1;
+                        else if (fastSlide == -1)
+                            fastSlide = 2;
                         break;
                     case SDLK_SPACE:
                         if (!scoreDrop(&testPiece,&testGrid,tetrisGrid,&score,&lines,&dropped,level,&swappable))
@@ -272,9 +317,18 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             loop++;
         }
 
-        if (fastDrop&&MSDelay>50)
+        if (fastDrop&&MSDelay>dropWait)
         {
-            MSDelay=50;
+            MSDelay=dropWait;
+        }
+
+        if (fastSlide&&SDL_GetTicks()-slideTime>slideWait&&!paused)
+        {
+            if (fastSlide<0)
+                movePieceLeft(&testPiece,&testGrid);
+            if (fastSlide>0)
+                movePieceRight(&testPiece,&testGrid);
+            slideTime = SDL_GetTicks();
         }
 
         if (SDL_GetTicks()-ticks>MSDelay&&!paused)
@@ -303,7 +357,7 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
 
         // CLEAR DRAWING AREA
 
-        SDL_FillRect(screen,&screenrect,SDL_MapRGB(screen->format, 0, 0, 0));
+        SDL_FillRect(screen,&screenrect,SDL_MapRGB(screen->format,127,127,127));
 
         // DRAW GRID AND PIECE THAT PLAYER IS CURRENTLY CONTROLLING
 
@@ -347,7 +401,7 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
 
         // DRAWING ENDS HERE
 
-        // finally, update the screen :)
+        // Update the screen
         SDL_Flip(screen);
     } // end main loop
 }
