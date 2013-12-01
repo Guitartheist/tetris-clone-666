@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
 #include "Block.h"
 #include "Piece.h"
 #include "Grid.h"
@@ -18,7 +19,7 @@ int main ( int argc, char** argv )
     srand(time(0));
 
     // initialize SDL video
-    if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+    if ( SDL_Init( SDL_INIT_EVERYTHING ) < 0 )
     {
         printf( "Unable to init SDL: %s\n", SDL_GetError() );
         return 1;
@@ -44,6 +45,7 @@ int main ( int argc, char** argv )
     {
         resetPieceLists();
 
+        drawString("\1 Left SHIFT key swaps hold piece with active piece",screen,30,screen->h/2-CHARHEIGHT*4);
         drawString("\1 Left/Right arrow moves left/right P: pause",screen,30,screen->h/2-CHARHEIGHT*3);
         drawString("\1 Z: rotate left, Up arrow: rotate right",screen,30,screen->h/2-CHARHEIGHT*2);
         drawString("\1 Space: hard drop, Down arrow: soft drop",screen,30,screen->h/2-CHARHEIGHT);
@@ -123,8 +125,28 @@ int main ( int argc, char** argv )
     return 0;
 }
 
+Mix_Chunk *moveSound = NULL;
+Mix_Chunk *lockSound = NULL;
+Mix_Chunk *singleSound = NULL;
+Mix_Chunk *doubleSound = NULL;
+Mix_Chunk *tripleSound = NULL;
+Mix_Chunk *tetrisSound = NULL;
+
 void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
 {
+    //sound effects
+    //initialize SDL_mixer
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024);
+    Mix_AllocateChannels(128);
+    moveSound = Mix_LoadWAV("sounds/move.wav");
+    lockSound = Mix_LoadWAV("sounds/lock.wav");
+    singleSound = Mix_LoadWAV("sounds/single.wav");
+    doubleSound = Mix_LoadWAV("sounds/double.wav");
+    tripleSound = Mix_LoadWAV("sounds/triple.wav");
+    tetrisSound = Mix_LoadWAV("sounds/tetris.wav");
+    int lockChannel;
+    int moveChannel;
+
     //screen rectangle
     SDL_Rect screenrect= {0,0,screen->w,screen->h};
 
@@ -197,26 +219,26 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
             case SDL_KEYUP:
                 switch (event.key.keysym.sym)
                 {
-                    case SDLK_DOWN:
-                        fastDrop = 0;
-                        break;
+                case SDLK_DOWN:
+                    fastDrop = 0;
+                    break;
 
-                    case SDLK_LEFT:
-                        if (fastSlide == -2)
-                            fastSlide = 1;
-                        else
-                            fastSlide = 0;
-                        break;
+                case SDLK_LEFT:
+                    if (fastSlide == -2)
+                        fastSlide = 1;
+                    else
+                        fastSlide = 0;
+                    break;
 
-                    case SDLK_RIGHT:
-                        if (fastSlide == 2)
-                            fastSlide = -1;
-                        else
-                            fastSlide = 0;
-                        break;
+                case SDLK_RIGHT:
+                    if (fastSlide == 2)
+                        fastSlide = -1;
+                    else
+                        fastSlide = 0;
+                    break;
 
-                    default:
-                        break;
+                default:
+                    break;
                 }
 
                 break;
@@ -241,6 +263,10 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
 
                 if (!paused)
                 {
+                    //play move sound
+                    moveChannel = Mix_PlayChannel(-1, moveSound, 0);
+                    Mix_Volume(moveChannel,10);
+
                     switch (event.key.keysym.sym)
                     {
                     case SDLK_LSHIFT: //swap holdpiece
@@ -290,6 +316,9 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
                             fastSlide = 2;
                         break;
                     case SDLK_SPACE:
+
+                        lockChannel = Mix_PlayChannel(-1,lockSound,0);
+                        Mix_Volume(lockChannel,90);
                         if (!scoreDrop(&testPiece,&testGrid,tetrisGrid,&score,&lines,&dropped,level,&swappable))
                         {
                             done=1;
@@ -342,6 +371,8 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
                         done=1;
                         break;
                     }
+                    lockChannel = Mix_PlayChannel(-1,lockSound,0);
+                    Mix_Volume(lockChannel,90);
                     ticks=SDL_GetTicks();
                 }
             }
@@ -404,6 +435,15 @@ void singlePlayerLoop(SDL_Surface* screen, int startingLevel )
         // Update the screen
         SDL_Flip(screen);
     } // end main loop
+
+    //cleanup sound effects
+    Mix_FreeChunk(lockSound);
+    Mix_FreeChunk(moveSound);
+    Mix_FreeChunk(singleSound);
+    Mix_FreeChunk(doubleSound);
+    Mix_FreeChunk(tripleSound);
+    Mix_FreeChunk(tetrisSound);
+    Mix_CloseAudio();
 }
 
 //Return 0 if dropping the latest piece has ended the game
@@ -414,6 +454,25 @@ int scoreDrop(Piece *piece, Grid *grid, SDL_Surface *surface, int *score, int *l
     if (dropTest<0)
         return 0;
     *lines+=dropTest;
+
+    int clearChannel;
+
+    switch(dropTest)
+    {
+    case 4:
+        clearChannel = Mix_PlayChannel(-1,tetrisSound,0);
+        Mix_Volume(clearChannel,80);
+    case 3:
+        clearChannel = Mix_PlayChannel(-1,tripleSound,0);
+        Mix_Volume(clearChannel,80);
+    case 2:
+        clearChannel = Mix_PlayChannel(-1,doubleSound,0);
+        Mix_Volume(clearChannel,80);
+    case 1:
+        clearChannel = Mix_PlayChannel(-1,singleSound,0);
+        Mix_Volume(clearChannel,80);
+        break;
+    }
     spawnPiece(piece,getPiece(*dropped));
     *dropped+=1;
     *swappable=1;
