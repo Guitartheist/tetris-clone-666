@@ -146,7 +146,10 @@ void rollPieceSet()
 void spawnPiece(Piece* piece, enum PieceShape type)
 {
     piece->x=(GRIDXSIZE/2)*BLOCKSIZE;
-    piece->y=BLOCKSIZE;
+    if (type==I)
+        piece->y=BLOCKSIZE*2;
+    else
+        piece->y=BLOCKSIZE;
     piece->direction=UP;
     piece->type=type;
 }
