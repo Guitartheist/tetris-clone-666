@@ -10,6 +10,11 @@ void drawGrid(Grid* toDraw,SDL_Surface* screen)
     gridLine.w=1;
     gridLine.h=GRIDYSIZE*BLOCKSIZE;
 
+    SDL_Rect screenRect = {0,0,GRIDXSIZE*BLOCKSIZE,GRIDYSIZE*BLOCKSIZE};
+    //draw background
+
+    SDL_FillRect(screen,&screenRect,SDL_MapRGB(screen->format,0,0,0));
+
     //draw blocks
     for (x=0; x<GRIDXSIZE; x++)
     {
