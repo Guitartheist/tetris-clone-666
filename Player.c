@@ -74,4 +74,12 @@ void initPlayer(Player* player)
     createPiece(&player->held,0,BLOCKSIZE,BLOCKSIZE*7.5);
     player->swappable = 1;
     player->swapped = 0;
+    player->controller.hardDrop = SDLK_SPACE;
+    player->controller.moveDown = SDLK_DOWN;
+    player->controller.moveLeft = SDLK_LEFT;
+    player->controller.moveRight = SDLK_RIGHT;
+    player->controller.rotateLeft = SDLK_z;
+    player->controller.rotateRight = SDLK_UP;
+    player->controller.pause = SDLK_p;
+    player->controller.hold = SDLK_LSHIFT;
 }
