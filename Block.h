@@ -3,7 +3,7 @@
 
 #include <SDL/SDL.h>
 
-#define BLOCKSIZE 20
+#define BLOCKSIZE 16
 
 enum Color{RED,BLUE,CYAN,PURPLE,YELLOW,ORANGE,GREEN};
 
@@ -16,5 +16,6 @@ typedef struct Block
 void setBlock(Block*,int,int,SDL_PixelFormat*,enum Color);
 void setBlockFromBlock(Block*,Block* const);
 void drawBlock(Block*,SDL_Surface*);
+void drawBlockOutline(Block*,SDL_Surface*);
 
 #endif // BLOCK_H

@@ -505,8 +505,7 @@ int dropPiece(Piece* piece, Grid* grid,SDL_Surface *screen,int *score,int level)
         return -1;
 }
 
-//If an operation is possible on the specified grid
-//Perform the operation on the specified piece
+//Draw piece outline to the screen
 void drawPiece(Piece* const piece, SDL_Surface* screen)
 {
     Block a,b,c,d;
@@ -697,6 +696,198 @@ void drawPiece(Piece* const piece, SDL_Surface* screen)
     drawBlock(&b,screen);
     drawBlock(&c,screen);
     drawBlock(&d,screen);
+}
+
+void drawPieceOutline(Piece *const piece,SDL_Surface* screen)
+{
+    Block a,b,c,d;
+    switch (piece->type)
+    {
+    case Z:
+        switch (piece->direction)
+        {
+        case UP:
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,RED);
+            setBlock(&b,piece->x,piece->y-BLOCKSIZE,screen->format,RED);
+            setBlock(&c,piece->x,piece->y,screen->format,RED);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,RED);
+            break;
+        case RIGHT:
+            setBlock(&a,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,RED);
+            setBlock(&b,piece->x,piece->y,screen->format,RED);
+            setBlock(&c,piece->x+BLOCKSIZE,piece->y,screen->format,RED);
+            setBlock(&d,piece->x,piece->y+BLOCKSIZE,screen->format,RED);
+            break;
+        case DOWN:
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y,screen->format,RED);
+            setBlock(&b,piece->x,piece->y,screen->format,RED);
+            setBlock(&c,piece->x,piece->y+BLOCKSIZE,screen->format,RED);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,RED);
+            break;
+        case LEFT:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,RED);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,RED);
+            setBlock(&c,piece->x,piece->y,screen->format,RED);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,RED);
+            break;
+        }
+        break;
+    case L:
+        switch (piece->direction)
+        {
+        case UP:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,BLUE);
+            setBlock(&b,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&c,piece->x,piece->y+BLOCKSIZE,screen->format,BLUE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,BLUE);
+            break;
+        case RIGHT:
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&b,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&c,piece->x+BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,BLUE);
+            break;
+        case DOWN:
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,BLUE);
+            setBlock(&b,piece->x,piece->y-BLOCKSIZE,screen->format,BLUE);
+            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&d,piece->x,piece->y+BLOCKSIZE,screen->format,BLUE);
+            break;
+        case LEFT:
+            setBlock(&a,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,BLUE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,BLUE);
+            break;
+        }
+        break;
+    case I:
+        switch (piece->direction)
+        {
+        case UP:
+            setBlock(&a,piece->x-BLOCKSIZE*2,piece->y-BLOCKSIZE,screen->format,CYAN);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,CYAN);
+            setBlock(&c,piece->x,piece->y-BLOCKSIZE,screen->format,CYAN);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,CYAN);
+            break;
+        case RIGHT:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE*2,screen->format,CYAN);
+            setBlock(&b,piece->x,piece->y-BLOCKSIZE,screen->format,CYAN);
+            setBlock(&c,piece->x,piece->y,screen->format,CYAN);
+            setBlock(&d,piece->x,piece->y+BLOCKSIZE,screen->format,CYAN);
+            break;
+        case DOWN:
+            setBlock(&a,piece->x-BLOCKSIZE*2,piece->y,screen->format,CYAN);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,CYAN);
+            setBlock(&c,piece->x,piece->y,screen->format,CYAN);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,CYAN);
+            break;
+        case LEFT:
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE*2,screen->format,CYAN);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,CYAN);
+            setBlock(&c,piece->x-BLOCKSIZE,piece->y,screen->format,CYAN);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,CYAN);
+            break;
+        }
+        break;
+    case T:
+        switch (piece->direction)
+        {
+        case UP:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,PURPLE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,PURPLE);
+            setBlock(&c,piece->x,piece->y,screen->format,PURPLE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,PURPLE);
+            break;
+        case RIGHT:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,PURPLE);
+            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,PURPLE);
+            setBlock(&c,piece->x,piece->y,screen->format,PURPLE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,PURPLE);
+            break;
+        case DOWN:
+            setBlock(&a,piece->x,piece->y+BLOCKSIZE,screen->format,PURPLE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,PURPLE);
+            setBlock(&c,piece->x,piece->y,screen->format,PURPLE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,PURPLE);
+            break;
+        case LEFT:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,PURPLE);
+            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,PURPLE);
+            setBlock(&c,piece->x,piece->y,screen->format,PURPLE);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y,screen->format,PURPLE);
+            break;
+        }
+        break;
+    case O:
+        setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,YELLOW);
+        setBlock(&b,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,YELLOW);
+        setBlock(&c,piece->x,piece->y,screen->format,YELLOW);
+        setBlock(&d,piece->x-BLOCKSIZE,piece->y,screen->format,YELLOW);
+        break;
+    case J:
+        switch (piece->direction)
+        {
+        case UP:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,ORANGE);
+            break;
+        case RIGHT:
+            setBlock(&a,piece->x+BLOCKSIZE,piece->y,screen->format,ORANGE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,ORANGE);
+            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            break;
+        case DOWN:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            break;
+        case LEFT:
+            setBlock(&a,piece->x+BLOCKSIZE,piece->y,screen->format,ORANGE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,ORANGE);
+            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,ORANGE);
+            break;
+        }
+        break;
+    case S:
+        switch (piece->direction)
+        {
+        case UP:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,GREEN);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,GREEN);
+            setBlock(&c,piece->x,piece->y,screen->format,GREEN);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,GREEN);
+            break;
+        case RIGHT:
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,GREEN);
+            setBlock(&b,piece->x+BLOCKSIZE,piece->y,screen->format,GREEN);
+            setBlock(&c,piece->x,piece->y,screen->format,GREEN);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,GREEN);
+            break;
+        case DOWN:
+            setBlock(&a,piece->x,piece->y,screen->format,GREEN);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,GREEN);
+            setBlock(&c,piece->x,piece->y+BLOCKSIZE,screen->format,GREEN);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,GREEN);
+            break;
+        case LEFT:
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y,screen->format,GREEN);
+            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,GREEN);
+            setBlock(&c,piece->x,piece->y,screen->format,GREEN);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,GREEN);
+            break;
+        }
+        break;
+    }
+    drawBlockOutline(&a,screen);
+    drawBlockOutline(&b,screen);
+    drawBlockOutline(&c,screen);
+    drawBlockOutline(&d,screen);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
