@@ -13,6 +13,14 @@ void singlePlayerBlitz(SDL_Surface*);
 void singlePlayerSprint(SDL_Surface*);
 int singlePlayerPauseMenu(SDL_Surface*);
 
+//process controller actions
+void playMoveSound();
+void playLockSound();
+int controllerProcess(Player *player,SDL_Surface *screen);
+
+//ask player to enter their preferred controls
+void configureSinglePlayerControls(Player *player, SDL_Surface *screen);
+
 //process a dropped piece, return 0 if game is over
 int scoreDrop(Player *player, SDL_Surface *surface);
 
@@ -32,7 +40,7 @@ int main ( int argc, char** argv )
     atexit(SDL_Quit);
 
     // create a new window
-    SDL_Surface* screen = SDL_SetVideoMode(BLOCKSIZE*GRIDXSIZE*2+1,BLOCKSIZE*GRIDYSIZE+1, 16,
+    SDL_Surface* screen = SDL_SetVideoMode(2*BLOCKSIZE*GRIDXSIZE*2+1,2*BLOCKSIZE*GRIDYSIZE+1, 16,
                                            SDL_HWSURFACE|SDL_DOUBLEBUF);
 
     if ( !screen )
@@ -49,11 +57,12 @@ int main ( int argc, char** argv )
     {
         resetPieceLists();
 
-        drawString(" Marathon - Surive   ",screen,30,screen->h/2-CHARHEIGHT*4);
-        drawString(" Blitz    - 2 minutes",screen,30,screen->h/2-CHARHEIGHT*3);
-        drawString(" Sprint   - 40 lines ",screen,30,screen->h/2-CHARHEIGHT*2);
-        drawString(" Multi-player        ",screen,30,screen->h/2-CHARHEIGHT);
-        drawString(" Configuration       ",screen,30,screen->h/2);
+        drawString(" Marathon - Surive   ",screen,30,screen->h/2-CHARHEIGHT*5);
+        drawString(" Blitz    - 2 minutes",screen,30,screen->h/2-CHARHEIGHT*4);
+        drawString(" Sprint   - 40 lines ",screen,30,screen->h/2-CHARHEIGHT*3);
+        drawString(" Multi-player        ",screen,30,screen->h/2-CHARHEIGHT*2);
+        drawString(" Configuration       ",screen,30,screen->h/2-CHARHEIGHT);
+        drawString(" Quit                ",screen,30,screen->h/2);
         drawString("*",screen,30,screen->h/2-CHARHEIGHT*option);
 
         SDL_Flip(screen);
@@ -79,7 +88,7 @@ int main ( int argc, char** argv )
                     done = 1;
                     break;
                 case SDLK_UP:
-                    if (option<4)
+                    if (option<5)
                         option++;
                     else
                         option = 0;
@@ -96,20 +105,24 @@ int main ( int argc, char** argv )
                     switch (option)
                     {
                     case 0:
+                    exit(0);
                         break;
 
                     case 1:
                         break;
 
                     case 2:
-                        singlePlayerSprint(screen);
                         break;
 
                     case 3:
-                        singlePlayerBlitz(screen);
+                        singlePlayerSprint(screen);
                         break;
 
                     case 4:
+                        singlePlayerBlitz(screen);
+                        break;
+
+                    case 5:
                         singlePlayerMarathon(screen);
                         break;
                     }
@@ -168,11 +181,10 @@ void freeSound()
 
 void singlePlayerMarathon(SDL_Surface* screen)
 {
-    //sound effects
-    //initialize SDL_mixer
+    char scoreString[60];
+    int currentTime = 0;
+
     initSound();
-    int lockChannel;
-    int moveChannel;
 
     //screen rectangle
     SDL_Rect screenrect= {0,0,screen->w,screen->h};
@@ -184,154 +196,22 @@ void singlePlayerMarathon(SDL_Surface* screen)
 
     initPlayer(&player);
 
-    // millisecond tracking variable
-    int ticks=SDL_GetTicks();
-
-    // fast drop (is user holding moveDown key?)
-    int fastDrop = 0;
-    // fast slide (is user holding down a lateral motion key?)
-    int fastSlide = 0; //-1 moves left, 1 moves right
-    //-2 moves right when left is released
-    //2 moves left when right is released
-
     //MS delay for fast drop or slide
     const int dropWait = 50;
     const int slideWait = 100;
-
-    int slideTime = 0; //slide time is measured against SDL_GetTicks() to calibrate movement speed
-
-    // hold piece buffer
-    Piece bufferPiece;
 
     // program main loop
     Uint8 done = 0;
     Uint8 paused = 0;
     while (!done)
     {
-        // message processing loop
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            // check for messages
-            switch (event.type)
-            {
-                // exit if the window is closed
-            case SDL_QUIT:
-                exit(0);
-                break;
+        //update currentTime
+        currentTime = (player.totalTime+(SDL_GetTicks()-player.startTime));
 
-            case SDL_KEYUP:
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_DOWN:
-                    fastDrop = 0;
-                    break;
+        // process user controllers
+        if (controllerProcess(&player,screen))
+            done = 1;
 
-                case SDLK_LEFT:
-                    if (fastSlide == -2)
-                        fastSlide = 1;
-                    else
-                        fastSlide = 0;
-                    break;
-
-                case SDLK_RIGHT:
-                    if (fastSlide == 2)
-                        fastSlide = -1;
-                    else
-                        fastSlide = 0;
-                    break;
-
-                default:
-                    break;
-                }
-
-                break;
-
-                // check for keypresses
-            case SDL_KEYDOWN:
-            {
-                // pause if ESCAPE is pressed
-                if (event.key.keysym.sym == SDLK_ESCAPE)
-                {
-                    if (singlePlayerPauseMenu(screen))
-                        done=1;
-                }
-
-                else if (event.key.keysym.sym == SDLK_p)
-                {
-                    if (singlePlayerPauseMenu(screen))
-                        done=1;
-                }
-
-                //play move sound
-                moveChannel = Mix_PlayChannel(-1, moveSound, 0);
-                Mix_Volume(moveChannel,12);
-
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_LSHIFT: //swap holdpiece
-                    if (!player.swapped)
-                    {
-                        player.swapped=1;
-                        player.held.type=player.active.type;
-                        spawnPiece(&player.active,getPiece(player.pieces));
-                        player.pieces++;
-                    }
-                    else if (player.swappable)
-                    {
-                        bufferPiece.type=player.active.type;
-                        player.active.type=player.held.type;
-                        player.held.type=bufferPiece.type;
-                        spawnPiece(&player.active,player.active.type);
-                        player.swappable=0;
-                    }
-                    break;
-                case SDLK_z:
-                    rotatePieceLeft(&player.active,&player.grid);
-                    break;
-                case SDLK_UP:
-                    rotatePieceRight(&player.active,&player.grid);
-                    break;
-                case SDLK_DOWN:
-                    ticks=SDL_GetTicks();
-                    //1 point per cell for a softdrop
-                    player.score+=movePieceDown(&player.active,&player.grid);
-                    fastDrop=1;
-                    break;
-                case SDLK_LEFT:
-                    slideTime = SDL_GetTicks();
-                    movePieceLeft(&player.active,&player.grid);
-                    if (fastSlide == 0)
-                        fastSlide = -1;
-                    else if (fastSlide == 1)
-                        fastSlide = -2;
-                    break;
-                case SDLK_RIGHT:
-                    slideTime = SDL_GetTicks();
-                    movePieceRight(&player.active,&player.grid);
-                    if (fastSlide == 0)
-                        fastSlide = 1;
-                    else if (fastSlide == -1)
-                        fastSlide = 2;
-                    break;
-                case SDLK_SPACE:
-
-                    lockChannel = Mix_PlayChannel(-1,lockSound,0);
-                    Mix_Volume(lockChannel,90);
-                    if (!scoreDrop(&player,screen))
-                    {
-                        done=1;
-                        break;
-                    }
-                    ticks=SDL_GetTicks();
-                    break;
-                default:
-                    break;
-                }
-                break;
-            }
-            }// end switch
-        } // end of message processing
 
         MSDelay=1000;
         int loop=0;
@@ -342,41 +222,40 @@ void singlePlayerMarathon(SDL_Surface* screen)
             loop++;
         }
 
-        if (fastDrop&&MSDelay>dropWait)
+        if (player.fastDrop&&MSDelay>dropWait)
         {
             MSDelay=dropWait;
         }
 
-        if (fastSlide&&SDL_GetTicks()-slideTime>slideWait&&!paused)
+        if (player.fastSlide&&SDL_GetTicks()-player.slideTime>slideWait&&!paused)
         {
-            if (fastSlide<0)
+            if (player.fastSlide<0)
                 movePieceLeft(&player.active,&player.grid);
-            if (fastSlide>0)
+            if (player.fastSlide>0)
                 movePieceRight(&player.active,&player.grid);
-            slideTime = SDL_GetTicks();
+            player.slideTime = SDL_GetTicks();
         }
 
-        if (SDL_GetTicks()-ticks>MSDelay&&!paused)
+        if (SDL_GetTicks()-player.ticks>MSDelay&&!paused)
         {
             if (!movePieceDown(&player.active,&player.grid))
             {
-                if (SDL_GetTicks()-ticks>slideDelay)
+                if (SDL_GetTicks()-player.ticks>slideDelay)
                 {
                     if (!scoreDrop(&player,screen))
                     {
                         done=1;
                         break;
                     }
-                    lockChannel = Mix_PlayChannel(-1,lockSound,0);
-                    Mix_Volume(lockChannel,90);
-                    ticks=SDL_GetTicks();
+                    playLockSound();
+                    player.ticks=SDL_GetTicks();
                 }
             }
             else
             {
-                if (fastDrop)
+                if (player.fastDrop)
                     player.score+=1;
-                ticks=SDL_GetTicks();
+                player.ticks=SDL_GetTicks();
             }
         }
 
@@ -390,9 +269,25 @@ void singlePlayerMarathon(SDL_Surface* screen)
 
         drawGame(player,screen);
 
+        // DRAW ELAPSED TIME
+
+        currentTime = (player.totalTime+(SDL_GetTicks()-player.startTime));
+        sprintf(scoreString,"%02d:%02d MARATHON",(currentTime/1000)/60,(currentTime/1000)%60);
+        drawString(scoreString,screen,0,0);
+
         // Update the screen
         SDL_Flip(screen);
     } // end main loop
+
+    sprintf(scoreString,"Marathon Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
+    scoreString[59]='\0';
+    drawString(scoreString,screen,0,0);
+    sprintf(scoreString,"with %d points",player.score);
+    scoreString[59]='\0';
+    drawString(scoreString,screen,0,CHARHEIGHT);
+
+    // Update the screen
+    SDL_Flip(screen);
 
     //cleanup
     freeSound();
@@ -400,15 +295,10 @@ void singlePlayerMarathon(SDL_Surface* screen)
 
 void singlePlayerBlitz(SDL_Surface* screen)
 {
-    //used to calculate time passed since start of game
-    int startTime = SDL_GetTicks();
-    int totalTime = 0;
+    char scoreString[30];
+    int currentTime = 0;
 
-    //sound effects
-    //initialize SDL_mixer
     initSound();
-    int lockChannel;
-    int moveChannel;
 
     //screen rectangle
     SDL_Rect screenrect= {0,0,screen->w,screen->h};
@@ -420,158 +310,22 @@ void singlePlayerBlitz(SDL_Surface* screen)
 
     initPlayer(&player);
 
-    // millisecond tracking variable
-    int ticks=SDL_GetTicks();
-
-    // fast drop (is user holding moveDown key?)
-    int fastDrop = 0;
-    // fast slide (is user holding down a lateral motion key?)
-    int fastSlide = 0; //-1 moves left, 1 moves right
-    //-2 moves right when left is released
-    //2 moves left when right is released
-
     //MS delay for fast drop or slide
     const int dropWait = 50;
     const int slideWait = 100;
-
-    int slideTime = 0; //slide time is measured against SDL_GetTicks() to calibrate movement speed
-
-    // hold piece buffer
-    Piece bufferPiece;
 
     // program main loop
     Uint8 done = 0;
     Uint8 paused = 0;
     while (!done)
     {
-        // message processing loop
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            // check for messages
-            switch (event.type)
-            {
-                // exit if the window is closed
-            case SDL_QUIT:
-                exit(0);
-                break;
+        //update currentTime
+        currentTime = (player.totalTime+(SDL_GetTicks()-player.startTime));
 
-            case SDL_KEYUP:
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_DOWN:
-                    fastDrop = 0;
-                    break;
+        // process user controllers
+        if (controllerProcess(&player,screen))
+            done = 1;
 
-                case SDLK_LEFT:
-                    if (fastSlide == -2)
-                        fastSlide = 1;
-                    else
-                        fastSlide = 0;
-                    break;
-
-                case SDLK_RIGHT:
-                    if (fastSlide == 2)
-                        fastSlide = -1;
-                    else
-                        fastSlide = 0;
-                    break;
-
-                default:
-                    break;
-                }
-
-                break;
-
-                // check for keypresses
-            case SDL_KEYDOWN:
-            {
-                // pause if ESCAPE is pressed
-                if (event.key.keysym.sym == SDLK_ESCAPE)
-                {
-                    totalTime += SDL_GetTicks() - startTime;
-                    if (singlePlayerPauseMenu(screen))
-                        return;
-                    startTime = SDL_GetTicks();
-                }
-
-                else if (event.key.keysym.sym == SDLK_p)
-                {
-                    totalTime += SDL_GetTicks() - startTime;
-                    if (singlePlayerPauseMenu(screen))
-                        return;
-                    startTime = SDL_GetTicks();
-                }
-
-                //play move sound
-                moveChannel = Mix_PlayChannel(-1, moveSound, 0);
-                Mix_Volume(moveChannel,12);
-
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_LSHIFT: //swap holdpiece
-                    if (!player.swapped)
-                    {
-                        player.swapped=1;
-                        player.held.type=player.active.type;
-                        spawnPiece(&player.active,getPiece(player.pieces));
-                        player.pieces++;
-                    }
-                    else if (player.swappable)
-                    {
-                        bufferPiece.type=player.active.type;
-                        player.active.type=player.held.type;
-                        player.held.type=bufferPiece.type;
-                        spawnPiece(&player.active,player.active.type);
-                        player.swappable=0;
-                    }
-                    break;
-                case SDLK_z:
-                    rotatePieceLeft(&player.active,&player.grid);
-                    break;
-                case SDLK_UP:
-                    rotatePieceRight(&player.active,&player.grid);
-                    break;
-                case SDLK_DOWN:
-                    ticks=SDL_GetTicks();
-                    //1 point per cell for a softdrop
-                    player.score+=movePieceDown(&player.active,&player.grid);
-                    fastDrop=1;
-                    break;
-                case SDLK_LEFT:
-                    slideTime = SDL_GetTicks();
-                    movePieceLeft(&player.active,&player.grid);
-                    if (fastSlide == 0)
-                        fastSlide = -1;
-                    else if (fastSlide == 1)
-                        fastSlide = -2;
-                    break;
-                case SDLK_RIGHT:
-                    slideTime = SDL_GetTicks();
-                    movePieceRight(&player.active,&player.grid);
-                    if (fastSlide == 0)
-                        fastSlide = 1;
-                    else if (fastSlide == -1)
-                        fastSlide = 2;
-                    break;
-                case SDLK_SPACE:
-
-                    lockChannel = Mix_PlayChannel(-1,lockSound,0);
-                    Mix_Volume(lockChannel,90);
-                    if (!scoreDrop(&player,screen))
-                    {
-                        done=1;
-                        break;
-                    }
-                    ticks=SDL_GetTicks();
-                    break;
-                default:
-                    break;
-                }
-                break;
-            }
-            }// end switch
-        } // end of message processing
 
         MSDelay=1000;
         int loop=0;
@@ -582,41 +336,40 @@ void singlePlayerBlitz(SDL_Surface* screen)
             loop++;
         }
 
-        if (fastDrop&&MSDelay>dropWait)
+        if (player.fastDrop&&MSDelay>dropWait)
         {
             MSDelay=dropWait;
         }
 
-        if (fastSlide&&SDL_GetTicks()-slideTime>slideWait&&!paused)
+        if (player.fastSlide&&SDL_GetTicks()-player.slideTime>slideWait&&!paused)
         {
-            if (fastSlide<0)
+            if (player.fastSlide<0)
                 movePieceLeft(&player.active,&player.grid);
-            if (fastSlide>0)
+            if (player.fastSlide>0)
                 movePieceRight(&player.active,&player.grid);
-            slideTime = SDL_GetTicks();
+            player.slideTime = SDL_GetTicks();
         }
 
-        if (SDL_GetTicks()-ticks>MSDelay&&!paused)
+        if (SDL_GetTicks()-player.ticks>MSDelay&&!paused)
         {
             if (!movePieceDown(&player.active,&player.grid))
             {
-                if (SDL_GetTicks()-ticks>slideDelay)
+                if (SDL_GetTicks()-player.ticks>slideDelay)
                 {
                     if (!scoreDrop(&player,screen))
                     {
                         done=1;
                         break;
                     }
-                    lockChannel = Mix_PlayChannel(-1,lockSound,0);
-                    Mix_Volume(lockChannel,90);
-                    ticks=SDL_GetTicks();
+                    playLockSound();
+                    player.ticks=SDL_GetTicks();
                 }
             }
             else
             {
-                if (fastDrop)
+                if (player.fastDrop)
                     player.score+=1;
-                ticks=SDL_GetTicks();
+                player.ticks=SDL_GetTicks();
             }
         }
 
@@ -632,20 +385,29 @@ void singlePlayerBlitz(SDL_Surface* screen)
 
         // DRAW ELAPSED TIME
 
-        char scoreString[5];
-        int currentTime = (totalTime+(SDL_GetTicks()-startTime));
-        sprintf(scoreString,"%d:%02d",(120-(currentTime/1000))/60,(120-(currentTime/1000))%60);
+        sprintf(scoreString,"%02d:%02d BLITZ",(120-(currentTime/1000))/60,(120-(currentTime/1000))%60);
         drawString(scoreString,screen,0,0);
 
         // Update the screen
         SDL_Flip(screen);
 
-        if (currentTime/1000>120)
+        if (currentTime/1000>=120)
             done=1;
-
     } // end main loop
 
-    totalTime += SDL_GetTicks() - startTime;
+    if (currentTime/1000<120)
+    {
+        drawString("Blitz Score: Failure.",screen,0,0);
+    }
+    else
+    {
+        sprintf(scoreString,"Blitz Score: %d",player.score);
+        scoreString[29]='\0';
+        drawString(scoreString,screen,0,0);
+    }
+
+    // Update the screen
+    SDL_Flip(screen);
 
     //cleanup
     freeSound();
@@ -653,15 +415,10 @@ void singlePlayerBlitz(SDL_Surface* screen)
 
 void singlePlayerSprint(SDL_Surface* screen)
 {
-    //used to calculate time passed since start of game
-    int startTime = SDL_GetTicks();
-    int totalTime = 0;
+    char scoreString[30];
+    int currentTime = 0;
 
-    //sound effects
-    //initialize SDL_mixer
     initSound();
-    int lockChannel;
-    int moveChannel;
 
     //screen rectangle
     SDL_Rect screenrect= {0,0,screen->w,screen->h};
@@ -673,158 +430,22 @@ void singlePlayerSprint(SDL_Surface* screen)
 
     initPlayer(&player);
 
-    // millisecond tracking variable
-    int ticks=SDL_GetTicks();
-
-    // fast drop (is user holding moveDown key?)
-    int fastDrop = 0;
-    // fast slide (is user holding down a lateral motion key?)
-    int fastSlide = 0; //-1 moves left, 1 moves right
-    //-2 moves right when left is released
-    //2 moves left when right is released
-
     //MS delay for fast drop or slide
     const int dropWait = 50;
     const int slideWait = 100;
-
-    int slideTime = 0; //slide time is measured against SDL_GetTicks() to calibrate movement speed
-
-    // hold piece buffer
-    Piece bufferPiece;
 
     // program main loop
     Uint8 done = 0;
     Uint8 paused = 0;
     while (!done)
     {
-        // message processing loop
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            // check for messages
-            switch (event.type)
-            {
-                // exit if the window is closed
-            case SDL_QUIT:
-                exit(0);
-                break;
+        //update currentTime
+        currentTime = (player.totalTime+(SDL_GetTicks()-player.startTime));
 
-            case SDL_KEYUP:
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_DOWN:
-                    fastDrop = 0;
-                    break;
+        // process user controllers
+        if (controllerProcess(&player,screen))
+            done = 1;
 
-                case SDLK_LEFT:
-                    if (fastSlide == -2)
-                        fastSlide = 1;
-                    else
-                        fastSlide = 0;
-                    break;
-
-                case SDLK_RIGHT:
-                    if (fastSlide == 2)
-                        fastSlide = -1;
-                    else
-                        fastSlide = 0;
-                    break;
-
-                default:
-                    break;
-                }
-
-                break;
-
-                // check for keypresses
-            case SDL_KEYDOWN:
-            {
-                // pause if ESCAPE is pressed
-                if (event.key.keysym.sym == SDLK_ESCAPE)
-                {
-                    totalTime += SDL_GetTicks() - startTime;
-                    if (singlePlayerPauseMenu(screen))
-                        return;
-                    startTime = SDL_GetTicks();
-                }
-
-                else if (event.key.keysym.sym == SDLK_p)
-                {
-                    totalTime += SDL_GetTicks() - startTime;
-                    if (singlePlayerPauseMenu(screen))
-                        return;
-                    startTime = SDL_GetTicks();
-                }
-
-                //play move sound
-                moveChannel = Mix_PlayChannel(-1, moveSound, 0);
-                Mix_Volume(moveChannel,12);
-
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_LSHIFT: //swap holdpiece
-                    if (!player.swapped)
-                    {
-                        player.swapped=1;
-                        player.held.type=player.active.type;
-                        spawnPiece(&player.active,getPiece(player.pieces));
-                        player.pieces++;
-                    }
-                    else if (player.swappable)
-                    {
-                        bufferPiece.type=player.active.type;
-                        player.active.type=player.held.type;
-                        player.held.type=bufferPiece.type;
-                        spawnPiece(&player.active,player.active.type);
-                        player.swappable=0;
-                    }
-                    break;
-                case SDLK_z:
-                    rotatePieceLeft(&player.active,&player.grid);
-                    break;
-                case SDLK_UP:
-                    rotatePieceRight(&player.active,&player.grid);
-                    break;
-                case SDLK_DOWN:
-                    ticks=SDL_GetTicks();
-                    //1 point per cell for a softdrop
-                    player.score+=movePieceDown(&player.active,&player.grid);
-                    fastDrop=1;
-                    break;
-                case SDLK_LEFT:
-                    slideTime = SDL_GetTicks();
-                    movePieceLeft(&player.active,&player.grid);
-                    if (fastSlide == 0)
-                        fastSlide = -1;
-                    else if (fastSlide == 1)
-                        fastSlide = -2;
-                    break;
-                case SDLK_RIGHT:
-                    slideTime = SDL_GetTicks();
-                    movePieceRight(&player.active,&player.grid);
-                    if (fastSlide == 0)
-                        fastSlide = 1;
-                    else if (fastSlide == -1)
-                        fastSlide = 2;
-                    break;
-                case SDLK_SPACE:
-
-                    lockChannel = Mix_PlayChannel(-1,lockSound,0);
-                    Mix_Volume(lockChannel,90);
-                    if (!scoreDrop(&player,screen))
-                    {
-                        done=1;
-                        break;
-                    }
-                    ticks=SDL_GetTicks();
-                    break;
-                default:
-                    break;
-                }
-                break;
-            }
-            }// end switch
-        } // end of message processing
 
         MSDelay=1000;
         int loop=0;
@@ -835,41 +456,40 @@ void singlePlayerSprint(SDL_Surface* screen)
             loop++;
         }
 
-        if (fastDrop&&MSDelay>dropWait)
+        if (player.fastDrop&&MSDelay>dropWait)
         {
             MSDelay=dropWait;
         }
 
-        if (fastSlide&&SDL_GetTicks()-slideTime>slideWait&&!paused)
+        if (player.fastSlide&&SDL_GetTicks()-player.slideTime>slideWait&&!paused)
         {
-            if (fastSlide<0)
+            if (player.fastSlide<0)
                 movePieceLeft(&player.active,&player.grid);
-            if (fastSlide>0)
+            if (player.fastSlide>0)
                 movePieceRight(&player.active,&player.grid);
-            slideTime = SDL_GetTicks();
+            player.slideTime = SDL_GetTicks();
         }
 
-        if (SDL_GetTicks()-ticks>MSDelay&&!paused)
+        if (SDL_GetTicks()-player.ticks>MSDelay&&!paused)
         {
             if (!movePieceDown(&player.active,&player.grid))
             {
-                if (SDL_GetTicks()-ticks>slideDelay)
+                if (SDL_GetTicks()-player.ticks>slideDelay)
                 {
                     if (!scoreDrop(&player,screen))
                     {
                         done=1;
                         break;
                     }
-                    lockChannel = Mix_PlayChannel(-1,lockSound,0);
-                    Mix_Volume(lockChannel,90);
-                    ticks=SDL_GetTicks();
+                    playLockSound();
+                    player.ticks=SDL_GetTicks();
                 }
             }
             else
             {
-                if (fastDrop)
+                if (player.fastDrop)
                     player.score+=1;
-                ticks=SDL_GetTicks();
+                player.ticks=SDL_GetTicks();
             }
         }
 
@@ -885,9 +505,7 @@ void singlePlayerSprint(SDL_Surface* screen)
 
         // DRAW ELAPSED TIME
 
-        char scoreString[5];
-        int currentTime = (totalTime+(SDL_GetTicks()-startTime));
-        sprintf(scoreString,"%d:%02d",(currentTime/1000)/60,(currentTime/1000)%60);
+        sprintf(scoreString,"%02d:%02d SPRINT",(currentTime/1000)/60,(currentTime/1000)%60);
         drawString(scoreString,screen,0,0);
 
         // Update the screen
@@ -898,7 +516,19 @@ void singlePlayerSprint(SDL_Surface* screen)
 
     } // end main loop
 
-    totalTime += SDL_GetTicks() - startTime;
+    if (player.lines<40)
+    {
+        drawString("Sprint Score: Failure.",screen,0,0);
+    }
+    else
+    {
+        sprintf(scoreString,"Sprint Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
+        scoreString[29]='\0';
+        drawString(scoreString,screen,0,0);
+    }
+
+    // Update the screen
+    SDL_Flip(screen);
 
     //cleanup
     freeSound();
@@ -928,6 +558,148 @@ int singlePlayerPauseMenu(SDL_Surface *screen)
                 break;
             }
         }
+}
+
+void playMoveSound()
+{
+    //play move sound
+    int moveChannel = Mix_PlayChannel(-1, moveSound, 0);
+    Mix_Volume(moveChannel,12);
+}
+
+void playLockSound()
+{
+    //play lock sound
+    int lockChannel = Mix_PlayChannel(-1,lockSound,0);
+    Mix_Volume(lockChannel,90);
+}
+
+int controllerProcess(Player *player,SDL_Surface *screen)
+{
+    SDL_Event event;
+    Piece bufferPiece;
+        while (SDL_PollEvent(&event))
+        {
+            // check for messages
+            switch (event.type)
+            {
+                // exit if the window is closed
+            case SDL_QUIT:
+                exit(0);
+                break;
+
+            case SDL_KEYUP:
+                if (event.key.keysym.sym == player->controller.moveDown)
+                    player->fastDrop = 0;
+
+                else if (event.key.keysym.sym == player->controller.moveLeft)
+                {
+                    if (player->fastSlide == -2)
+                        player->fastSlide = 1;
+                    else
+                        player->fastSlide = 0;
+                }
+
+                else if (event.key.keysym.sym == player->controller.moveRight)
+                {
+                    if (player->fastSlide == 2)
+                        player->fastSlide = -1;
+                    else
+                        player->fastSlide = 0;
+                }
+
+                break;
+
+                // check for keypresses
+            case SDL_KEYDOWN:
+            {
+                // pause if ESCAPE is pressed
+                if (event.key.keysym.sym == player->controller.quit)
+                {
+                    player->totalTime += SDL_GetTicks() - player->startTime;
+                    if (singlePlayerPauseMenu(screen))
+                        return 1;
+                    player->startTime = SDL_GetTicks();
+                }
+
+                else if (event.key.keysym.sym == player->controller.pause)
+                {
+                    player->totalTime += SDL_GetTicks() - player->startTime;
+                    if (singlePlayerPauseMenu(screen))
+                        return 1;
+                    player->startTime = SDL_GetTicks();
+                }
+
+                playMoveSound();
+
+                if (event.key.keysym.sym == player->controller.hold) //swap holdpiece
+                {
+                    if (!player->swapped)
+                    {
+                        player->swapped=1;
+                        player->held.type=player->active.type;
+                        spawnPiece(&player->active,getPiece(player->pieces));
+                        player->pieces++;
+                    }
+                    else if (player->swappable)
+                    {
+                        bufferPiece.type=player->active.type;
+                        player->active.type=player->held.type;
+                        player->held.type=bufferPiece.type;
+                        spawnPiece(&player->active,player->active.type);
+                        player->swappable=0;
+                    }
+                }
+                else if (event.key.keysym.sym == player->controller.rotateLeft)
+                    rotatePieceLeft(&player->active,&player->grid);
+
+                else if (event.key.keysym.sym == player->controller.rotateRight)
+                    rotatePieceRight(&player->active,&player->grid);
+
+                else if (event.key.keysym.sym == player->controller.moveDown)
+                {
+                    player->ticks=SDL_GetTicks();
+                    //1 point per cell for a softdrop
+                    player->score+=movePieceDown(&player->active,&player->grid);
+                    player->fastDrop=1;
+                }
+                else if (event.key.keysym.sym == player->controller.moveLeft)
+                {
+                    player->slideTime = SDL_GetTicks();
+                    movePieceLeft(&player->active,&player->grid);
+                    if (player->fastSlide == 0)
+                        player->fastSlide = -1;
+                    else if (player->fastSlide == 1)
+                        player->fastSlide = -2;
+                }
+                else if (event.key.keysym.sym == player->controller.moveRight)
+                {
+                    player->slideTime = SDL_GetTicks();
+                    movePieceRight(&player->active,&player->grid);
+                    if (player->fastSlide == 0)
+                        player->fastSlide = 1;
+                    else if (player->fastSlide == -1)
+                        player->fastSlide = 2;
+                }
+                else if (event.key.keysym.sym == player->controller.hardDrop)
+                {
+                    playLockSound();
+                    if (!scoreDrop(player,screen))
+                    {
+                        return 1;
+                    }
+                    player->ticks=SDL_GetTicks();
+                }
+                break;
+            }
+            }// end switch
+        }
+        return 0;
+}
+
+void configureSinglePlayerControls(Player *player, SDL_Surface *screen)
+{
+
 }
 
 //Return 0 if dropping the latest piece has ended the game

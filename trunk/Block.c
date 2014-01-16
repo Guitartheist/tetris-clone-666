@@ -48,3 +48,13 @@ void drawBlock(Block *block,SDL_Surface *screen)
     rect.w=block->position.w-1;
     SDL_FillRect(screen,&rect,block->color);
 }
+
+void drawBlockOutline(Block* block,SDL_Surface* screen)
+{
+    SDL_Rect rect;
+    rect.x=block->position.x+1;
+    rect.y=block->position.y+1;
+    rect.h=block->position.h-1;
+    rect.w=block->position.w-1;
+    SDL_FillRect(screen,&rect,SDL_MapRGB(screen->format,255,255,255));
+}

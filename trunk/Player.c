@@ -61,6 +61,14 @@ void drawGame(Player player, SDL_Surface *screen)
         drawPiece(&player.held,screen);
     }
 
+    //Draw where active piece will lock if player hard drops
+
+    Piece potentialLock;
+    createPiece(&potentialLock,player.active.type,player.active.x,player.active.y);
+    potentialLock.direction = player.active.direction;
+    while (movePieceDown(&potentialLock,&player.grid));
+    drawPieceOutline(&potentialLock,screen);
+
     // DRAWING ENDS HERE
 }
 
@@ -74,6 +82,13 @@ void initPlayer(Player* player)
     createPiece(&player->held,0,BLOCKSIZE,BLOCKSIZE*7.5);
     player->swappable = 1;
     player->swapped = 0;
+    player->fastDrop = 0;
+    player->fastSlide = 0;
+    // millisecond tracking variable
+    player->ticks=SDL_GetTicks();
+    player->startTime = SDL_GetTicks();
+    player->totalTime = 0;
+
     player->controller.hardDrop = SDLK_SPACE;
     player->controller.moveDown = SDLK_DOWN;
     player->controller.moveLeft = SDLK_LEFT;
@@ -82,4 +97,8 @@ void initPlayer(Player* player)
     player->controller.rotateRight = SDLK_UP;
     player->controller.pause = SDLK_p;
     player->controller.hold = SDLK_LSHIFT;
+    player->controller.quit = SDLK_ESCAPE;
+    player->controller.attackHorizontal = SDLK_1;
+    player->controller.attackVertical = SDLK_2;
+    player->controller.attackDiagonal = SDLK_3;
 }
