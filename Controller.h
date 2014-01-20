@@ -1,9 +1,11 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#define KEYBOARD 255
+
 typedef struct Controller
 {
-    Uint8 keyboard; //0 if contoller, 1 if keyboard
+    Uint8 keyboard; //ID if contoller, KEYBOARD if keyboard
     int rotateLeft;
     int rotateRight;
     int moveDown;

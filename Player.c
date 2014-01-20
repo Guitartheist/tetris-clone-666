@@ -27,7 +27,7 @@ void drawGame(Player player, SDL_Surface *screen)
     // DRAW NEXT 5 PIECES
     SDL_Rect backgroundRect = {BLOCKSIZE*GRIDXSIZE*1.5,BLOCKSIZE,BLOCKSIZE*5,BLOCKSIZE*20};
     SDL_FillRect(screen,&backgroundRect,SDL_MapRGB(screen->format,0,0,0));
-    drawString("Next 5 Pieces:",screen,BLOCKSIZE*GRIDXSIZE*1.5-(BLOCKSIZE),0);
+    drawString("Next Five:",screen,BLOCKSIZE*GRIDXSIZE*1.5-(BLOCKSIZE),0);
     Piece nextFive[5];
     createPiece(&nextFive[0],getPiece(player.pieces),BLOCKSIZE*GRIDXSIZE*1.6+BLOCKSIZE,BLOCKSIZE*2);
     createPiece(&nextFive[1],getPiece(player.pieces+1),BLOCKSIZE*GRIDXSIZE*1.6+BLOCKSIZE,(BLOCKSIZE*2)+(BLOCKSIZE*4));
@@ -89,6 +89,7 @@ void initPlayer(Player* player)
     player->startTime = SDL_GetTicks();
     player->totalTime = 0;
 
+    player->controller.keyboard = KEYBOARD;
     player->controller.hardDrop = SDLK_SPACE;
     player->controller.moveDown = SDLK_DOWN;
     player->controller.moveLeft = SDLK_LEFT;
