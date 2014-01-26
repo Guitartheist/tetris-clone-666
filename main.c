@@ -645,100 +645,107 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
         for (i=0; i<4; i++)
         {
-            MSDelay=1000;
-
-            int loop=0;
-            while (loop<=(players[i]->lines/10)+1)
+            if (players[i]->isActive)
             {
-                int temp=MSDelay/5;
-                MSDelay-=temp;
-                loop++;
-            }
 
-            if (players[i]->fastDrop&&MSDelay>dropWait)
-            {
-                MSDelay=dropWait;
-            }
+                MSDelay=1000;
 
-            if (players[i]->fastSlide&&SDL_GetTicks()-players[i]->slideTime>slideWait&&!paused)
-            {
-                if (players[i]->fastSlide<0)
-                    movePieceLeft(&players[i]->active,&players[i]->grid);
-                if (players[i]->fastSlide>0)
-                    movePieceRight(&players[i]->active,&players[i]->grid);
-                players[i]->slideTime = SDL_GetTicks();
-            }
-
-            if (SDL_GetTicks()-players[i]->ticks>MSDelay&&!paused)
-            {
-                if (!movePieceDown(&players[i]->active,&players[i]->grid))
+                int loop=0;
+                while (loop<=(players[i]->lines/10)+1)
                 {
-                    if (SDL_GetTicks()-players[i]->ticks>slideDelay)
+                    int temp=MSDelay/5;
+                    MSDelay-=temp;
+                    loop++;
+                }
+
+                if (players[i]->fastDrop&&MSDelay>dropWait)
+                {
+                    MSDelay=dropWait;
+                }
+
+                if (players[i]->fastSlide&&SDL_GetTicks()-players[i]->slideTime>slideWait&&!paused)
+                {
+                    if (players[i]->fastSlide<0)
+                        movePieceLeft(&players[i]->active,&players[i]->grid);
+                    if (players[i]->fastSlide>0)
+                        movePieceRight(&players[i]->active,&players[i]->grid);
+                    players[i]->slideTime = SDL_GetTicks();
+                }
+
+                if (SDL_GetTicks()-players[i]->ticks>MSDelay&&!paused)
+                {
+                    if (!movePieceDown(&players[i]->active,&players[i]->grid))
                     {
-                        if (!scoreDrop(players[i],quad[i]))
+                        if (SDL_GetTicks()-players[i]->ticks>slideDelay)
                         {
-                            done=1;
-                            break;
+                            if (!scoreDrop(players[i],quad[i]))
+                            {
+                                done=1;
+                                break;
+                            }
+                            players[i]->ticks=SDL_GetTicks();
                         }
+                    }
+                    else
+                    {
+                        if (players[i]->fastDrop)
+                            players[i]->score+=1;
                         players[i]->ticks=SDL_GetTicks();
                     }
                 }
-                else
+            }
+
+            // DRAWING STARTS HERE
+
+            // DRAW BACKGROUNDS
+            SDL_FillRect(window,&windowRect,SDL_MapRGB(window->format,127,127,127));
+            for (i=0; i<4; i++)
+            {
+                switch (i)
                 {
-                    if (players[i]->fastDrop)
-                        players[i]->score+=1;
-                    players[i]->ticks=SDL_GetTicks();
+                case 0:
+                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,200,200,200));
+                    break;
+                case 1:
+                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,127,127,127));
+                    break;
+                case 2:
+                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,127,127,127));
+                    break;
+                case 3:
+                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,200,200,200));
+                    break;
                 }
+
+                // DRAW GAME
+
+                if (players[i]->isActive)
+                {
+                    drawGame(*players[i],quad[i]);
+                }
+
+                // DRAW ELAPSED TIME
+
+                switch (type)
+                {
+                case MARATHON:
+                    currentTime = (players[i]->totalTime+(SDL_GetTicks()-players[i]->startTime));
+                    sprintf(scoreString,"%02d:%02d MARATHON",(currentTime/1000)/60,(currentTime/1000)%60);
+                    drawString(scoreString,quad[i],0,0);
+                    break;
+
+                case BLITZ:
+                    sprintf(scoreString,"%02d:%02d BLITZ",(120-(currentTime/1000))/60,(120-(currentTime/1000))%60);
+                    drawString(scoreString,quad[i],0,0);
+                    break;
+
+                case SPRINT:
+                    sprintf(scoreString,"%02d:%02d SPRINT",(currentTime/1000)/60,(currentTime/1000)%60);
+                    drawString(scoreString,quad[i],0,0);
+                    break;
+                }
+                SDL_Flip(quad[i]);
             }
-        }
-
-        // DRAWING STARTS HERE
-
-        // DRAW BACKGROUNDS
-        SDL_FillRect(window,&windowRect,SDL_MapRGB(window->format,127,127,127));
-        for (i=0; i<4; i++)
-        {
-            switch (i)
-            {
-            case 0:
-                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,255,0,0));
-                break;
-            case 1:
-                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,0,255,0));
-                break;
-            case 2:
-                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,0,0,255));
-                break;
-            case 3:
-                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,255,255,0));
-                break;
-            }
-
-            // DRAW GAME
-
-            drawGame(*players[i],quad[i]);
-
-            // DRAW ELAPSED TIME
-
-            switch (type)
-            {
-            case MARATHON:
-                currentTime = (players[i]->totalTime+(SDL_GetTicks()-players[i]->startTime));
-                sprintf(scoreString,"%02d:%02d MARATHON",(currentTime/1000)/60,(currentTime/1000)%60);
-                drawString(scoreString,quad[i],0,0);
-                break;
-
-            case BLITZ:
-                sprintf(scoreString,"%02d:%02d BLITZ",(120-(currentTime/1000))/60,(120-(currentTime/1000))%60);
-                drawString(scoreString,quad[i],0,0);
-                break;
-
-            case SPRINT:
-                sprintf(scoreString,"%02d:%02d SPRINT",(currentTime/1000)/60,(currentTime/1000)%60);
-                drawString(scoreString,quad[i],0,0);
-                break;
-            }
-            SDL_Flip(quad[i]);
         }
 
         // Update the screen

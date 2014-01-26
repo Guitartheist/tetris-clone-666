@@ -92,6 +92,7 @@ void initPlayer(Player* player)
 
 void initControls(Player *player)
 {
+    player->isActive = 0;
     player->controller.keyboard = KEYBOARD;
     player->controller.hardDrop = SDLK_SPACE;
     player->controller.moveDown = SDLK_DOWN;
@@ -688,7 +689,7 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
                 //determine which player this button press is assigned to
                 for (i=0; i<4; i++)
                 {
-                    if (player[i]->controller.keyboard==KEYBOARD)
+                    if (player[i]->controller.keyboard==KEYBOARD&&playerController[i]>=0)
                         break;
                 }
                 //attach the keyboard to a particular player if not yet attached
@@ -700,6 +701,7 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
                         {
                             playerController[i]=KEYBOARD;
                             player[i]->controller.keyboard=KEYBOARD;
+                            player[i]->isActive = 1;
                             break;
                         }
                     }
@@ -728,6 +730,7 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
                         {
                             playerController[i]=event.jbutton.which;
                             player[i]->controller.keyboard=event.jbutton.which;
+                            player[i]->isActive = 1;
                             break;
                         }
                     }
@@ -760,6 +763,10 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
     {
         SDL_FreeSurface(quad[i]);
     }
+
+    SDL_FillRect(screen,&endRect,SDL_MapRGB(screen->format,0,0,0));
+    drawString("Configuration Complete!",screen,0,0);
+    SDL_Flip(screen);
 }
 
 int multiControllerProcess(Player *player[4],SDL_Surface *screen)
