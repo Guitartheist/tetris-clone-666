@@ -88,7 +88,10 @@ void initPlayer(Player* player)
     player->ticks=SDL_GetTicks();
     player->startTime = SDL_GetTicks();
     player->totalTime = 0;
+}
 
+void initControls(Player *player)
+{
     player->controller.keyboard = KEYBOARD;
     player->controller.hardDrop = SDLK_SPACE;
     player->controller.moveDown = SDLK_DOWN;
@@ -554,6 +557,519 @@ int singlePlayerPauseMenu(Player player, SDL_Surface *screen)
                 break;
             }
         }
+}
+
+///////////////////////////////////////////////////////////////////////
+//
+// Function: configureMultiPlayerControls                                    
+//                                                                   
+// Description:
+//    Take the players through a controller configuration
+//                     
+// Parameters:  
+//    players[] - the players to whom the controllers will be defined
+//    screen - the surface upon which to draw prompts and progress bars
+//                                                                     
+///////////////////////////////////////////////////////////////////////
+
+void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
+{
+    int playerController[4] = {-1,-1,-1,-1};
+
+    SDL_Event event;
+    int done = 0;
+    int playerProgress[4]= {0,0,0,0};
+    int i;
+    int keys[4][9];
+
+    for (i=0;i<4;i++)
+    {
+        initControls(player[i]);
+    }
+
+    SDL_Rect screenRect = {0,0,BLOCKSIZE*GRIDXSIZE*2,BLOCKSIZE*GRIDYSIZE};
+    SDL_Rect playerRect1 = {0,0,BLOCKSIZE*GRIDXSIZE*2,BLOCKSIZE*GRIDYSIZE};
+    SDL_Rect playerRect2 = {BLOCKSIZE*GRIDXSIZE*2,0,BLOCKSIZE*GRIDXSIZE,BLOCKSIZE*GRIDYSIZE};
+    SDL_Rect playerRect3 = {0,BLOCKSIZE*GRIDYSIZE,BLOCKSIZE*GRIDXSIZE*2,BLOCKSIZE*GRIDYSIZE};
+    SDL_Rect playerRect4 = {BLOCKSIZE*GRIDXSIZE*2,BLOCKSIZE*GRIDYSIZE,BLOCKSIZE*GRIDXSIZE*2,BLOCKSIZE*GRIDYSIZE};
+
+    SDL_Rect endRect = {0,0,BLOCKSIZE*GRIDXSIZE*2,CHARHEIGHT*4};
+
+    SDL_FillRect(screen,&endRect,SDL_MapRGB(screen->format,0,0,0));
+
+    SDL_Surface *quad[4];
+
+    for (i=0; i<4; i++)
+    {
+        quad[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, BLOCKSIZE*GRIDXSIZE*2, BLOCKSIZE*GRIDYSIZE*2, 32,
+                                       screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
+    }
+
+    while (!done)
+    {
+        done=1;
+        for (i=0; i<4; i++)
+        {
+            if (playerProgress[i]<9&&playerController[i]>=0)
+                done=0;
+            if (playerController[0]<0)
+                done=0;
+        }
+
+        for (i=0; i<4; i++)
+            switch (playerProgress[i])
+            {
+            case 0:
+                drawString("Press rotate left",quad[i],0,0);
+                break;
+
+            case 1:
+                drawString("Press rotate right",quad[i],0,0);
+                break;
+
+            case 2:
+                drawString("Press hard drop   ",quad[i],0,0);
+                break;
+
+            case 3:
+                drawString("Press hold/swap   ",quad[i],0,0);
+                break;
+
+            case 4:
+                drawString("Press pause       ",quad[i],0,0);
+                break;
+
+            case 5:
+                drawString("Press quit        ",quad[i],0,0);
+                break;
+
+            case 6:
+                drawString("Press vertical ATK",quad[i],0,0);
+                break;
+
+            case 7:
+                drawString("Press horizon ATK  ",quad[i],0,0);
+                break;
+
+            case 8:
+                drawString("Press diagonal ATK",quad[i],0,0);
+                break;
+
+            case 9:
+                drawString("Waiting on other players...",quad[i],0,0);
+                break;
+            }
+
+        for (i=0; i<4; i++)
+        {
+            SDL_Flip(quad[i]);
+        }
+
+        SDL_BlitSurface(quad[0],&screenRect,screen,&playerRect1);
+        SDL_BlitSurface(quad[1],&screenRect,screen,&playerRect2);
+        SDL_BlitSurface(quad[2],&screenRect,screen,&playerRect3);
+        SDL_BlitSurface(quad[3],&screenRect,screen,&playerRect4);
+
+        SDL_Flip(screen);
+
+        while (SDL_PollEvent(&event))
+        {
+            // check for messages
+            switch (event.type)
+            {
+            // exit if the window is closed
+            case SDL_QUIT:
+                exit(0);
+                break;
+
+            // check for keypresses
+            case SDL_KEYDOWN:
+
+                //determine which player this button press is assigned to
+                for (i=0; i<4; i++)
+                {
+                    if (player[i]->controller.keyboard==KEYBOARD)
+                        break;
+                }
+                //attach the keyboard to a particular player if not yet attached
+                if (i>=4)
+                {
+                    for (i=0; i<4; i++)
+                    {
+                        if (playerController[i]<0)
+                        {
+                            playerController[i]=KEYBOARD;
+                            player[i]->controller.keyboard=KEYBOARD;
+                            break;
+                        }
+                    }
+                }
+                if (playerProgress[i]<9&&i<4)
+                {
+                    keys[i][playerProgress[i]]=event.key.keysym.sym;
+                    playerProgress[i]++;
+                }
+                break;
+
+            case SDL_JOYBUTTONDOWN:
+                //determine which player this button press is assigned to
+                for (i=0; i<4; i++)
+                {
+                    if (player[i]->controller.keyboard==event.jbutton.which)
+                        break;
+                }
+                //attach the joystick of the current button press to a particular player
+                //if joystick not yet assigned to a player
+                if (i>=4)
+                {
+                    for (i=0; i<4; i++)
+                    {
+                        if (playerController[i]<0)
+                        {
+                            playerController[i]=event.jbutton.which;
+                            player[i]->controller.keyboard=event.jbutton.which;
+                            break;
+                        }
+                    }
+                }
+                if (playerProgress[i]<9&&i<4)
+                {
+                    keys[i][playerProgress[i]]=event.jbutton.button;
+                    playerProgress[i]++;
+                }
+                break;
+
+            }// end switch
+        }
+    }
+
+    for (i=0; i<4; i++)
+    {
+        player[i]->controller.rotateLeft = keys[i][0];
+        player[i]->controller.rotateRight = keys[i][1];
+        player[i]->controller.hardDrop = keys[i][2];
+        player[i]->controller.hold = keys[i][3];
+        player[i]->controller.pause = keys[i][4];
+        player[i]->controller.quit = keys[i][5];
+        player[i]->controller.attackVertical = keys[i][6];
+        player[i]->controller.attackHorizontal = keys[i][7];
+        player[i]->controller.attackDiagonal = keys[i][8];
+    }
+
+    for (i=0; i<4; i++)
+    {
+        SDL_FreeSurface(quad[i]);
+    }
+}
+
+int multiControllerProcess(Player *player[4],SDL_Surface *screen)
+{
+    SDL_Event event;
+    Piece bufferPiece;
+    int i;
+
+    while (SDL_PollEvent(&event))
+    {
+
+        // exit if the window is closed
+        if (event.type == SDL_QUIT)
+        {
+            exit(0);
+        }
+
+        // check for messages
+        switch (event.type)
+        {
+
+        case SDL_KEYUP:
+            //determine which player this event belongs to
+            for (i=0; i<4; i++)
+            {
+                if (player[i]->controller.keyboard==KEYBOARD)
+                    break;
+            }
+
+            if (i<4)
+            {
+                if (event.key.keysym.sym == player[i]->controller.moveDown)
+                    player[i]->fastDrop = 0;
+
+                else if (event.key.keysym.sym == player[i]->controller.moveLeft)
+                {
+                    if (player[i]->fastSlide == -2)
+                        player[i]->fastSlide = 1;
+                    else
+                        player[i]->fastSlide = 0;
+                }
+
+                else if (event.key.keysym.sym == player[i]->controller.moveRight)
+                {
+                    if (player[i]->fastSlide == 2)
+                        player[i]->fastSlide = -1;
+                    else
+                        player[i]->fastSlide = 0;
+                }
+            }
+            break;
+
+        // check for keypresses
+        case SDL_KEYDOWN:
+            //determine which player this event belongs to
+            for (i=0; i<4; i++)
+            {
+                if (player[i]->controller.keyboard==KEYBOARD)
+                    break;
+            }
+
+            if (i<4)
+            {
+                if (event.key.keysym.sym == player[i]->controller.quit)
+                {
+                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
+                    if (singlePlayerPauseMenu(*player[i],screen))
+                        return 1;
+                    player[i]->startTime = SDL_GetTicks();
+                }
+
+                else if (event.key.keysym.sym == player[i]->controller.pause)
+                {
+                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
+                    if (singlePlayerPauseMenu(*player[i],screen))
+                        return 1;
+                    player[i]->startTime = SDL_GetTicks();
+                }
+
+                if (event.key.keysym.sym == player[i]->controller.hold) //swap holdpiece
+                {
+                    if (!player[i]->swapped)
+                    {
+                        player[i]->swapped=1;
+                        player[i]->held.type=player[i]->active.type;
+                        spawnPiece(&player[i]->active,getPiece(player[i]->pieces));
+                        player[i]->pieces++;
+                    }
+                    else if (player[i]->swappable)
+                    {
+                        bufferPiece.type=player[i]->active.type;
+                        player[i]->active.type=player[i]->held.type;
+                        player[i]->held.type=bufferPiece.type;
+                        spawnPiece(&player[i]->active,player[i]->active.type);
+                        player[i]->swappable=0;
+                    }
+                }
+                else if (event.key.keysym.sym == player[i]->controller.rotateLeft)
+                    rotatePieceLeft(&player[i]->active,&player[i]->grid);
+
+                else if (event.key.keysym.sym == player[i]->controller.rotateRight)
+                    rotatePieceRight(&player[i]->active,&player[i]->grid);
+
+                else if (event.key.keysym.sym == player[i]->controller.moveDown)
+                {
+                    player[i]->ticks=SDL_GetTicks();
+                    //1 point per cell for a softdrop
+                    player[i]->score+=movePieceDown(&player[i]->active,&player[i]->grid);
+                    player[i]->fastDrop=1;
+                }
+                else if (event.key.keysym.sym == player[i]->controller.moveLeft)
+                {
+                    player[i]->slideTime = SDL_GetTicks();
+                    movePieceLeft(&player[i]->active,&player[i]->grid);
+                    if (player[i]->fastSlide == 0)
+                        player[i]->fastSlide = -1;
+                    else if (player[i]->fastSlide == 1)
+                        player[i]->fastSlide = -2;
+                }
+                else if (event.key.keysym.sym == player[i]->controller.moveRight)
+                {
+                    player[i]->slideTime = SDL_GetTicks();
+                    movePieceRight(&player[i]->active,&player[i]->grid);
+                    if (player[i]->fastSlide == 0)
+                        player[i]->fastSlide = 1;
+                    else if (player[i]->fastSlide == -1)
+                        player[i]->fastSlide = 2;
+                }
+                else if (event.key.keysym.sym == player[i]->controller.hardDrop)
+                {
+                    if (!scoreDrop(player[i],screen))
+                    {
+                        return 1;
+                    }
+                    player[i]->ticks=SDL_GetTicks();
+                }
+            }
+            break;
+
+        case SDL_JOYBUTTONDOWN:
+            //determine which player this button press is assigned to
+            for (i=0; i<4; i++)
+            {
+                if (player[i]->controller.keyboard==event.jbutton.which)
+                    break;
+            }
+            if (i<4)
+            {
+                if (event.jbutton.button == player[i]->controller.quit)
+                {
+                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
+                    if (singlePlayerPauseMenu(*player[i],screen))
+                        return 1;
+                    player[i]->startTime = SDL_GetTicks();
+                }
+
+                else if (event.jbutton.button == player[i]->controller.pause)
+                {
+                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
+                    if (singlePlayerPauseMenu(*player[i],screen))
+                        return 1;
+                    player[i]->startTime = SDL_GetTicks();
+                }
+
+                if (event.jbutton.button == player[i]->controller.hold) //swap holdpiece
+                {
+                    if (!player[i]->swapped)
+                    {
+                        player[i]->swapped=1;
+                        player[i]->held.type=player[i]->active.type;
+                        spawnPiece(&player[i]->active,getPiece(player[i]->pieces));
+                        player[i]->pieces++;
+                    }
+                    else if (player[i]->swappable)
+                    {
+                        bufferPiece.type=player[i]->active.type;
+                        player[i]->active.type=player[i]->held.type;
+                        player[i]->held.type=bufferPiece.type;
+                        spawnPiece(&player[i]->active,player[i]->active.type);
+                        player[i]->swappable=0;
+                    }
+                }
+                else if (event.jbutton.button == player[i]->controller.rotateLeft)
+                    rotatePieceLeft(&player[i]->active,&player[i]->grid);
+
+                else if (event.jbutton.button == player[i]->controller.rotateRight)
+                    rotatePieceRight(&player[i]->active,&player[i]->grid);
+
+                else if (event.jbutton.button == player[i]->controller.hardDrop)
+                {
+                    if (!scoreDrop(player[i],screen))
+                    {
+                        return 1;
+                    }
+                    player[i]->ticks=SDL_GetTicks();
+                }
+            }
+            break;
+
+        case SDL_JOYHATMOTION:
+//determine which player this button press is assigned to
+            for (i=0; i<4; i++)
+            {
+                if (player[i]->controller.keyboard==event.jbutton.which)
+                    break;
+            }
+            if (i<4)
+            {
+
+                if ( ! (event.jhat.value & SDL_HAT_DOWN))
+                {
+                    player[i]->fastDrop = 0;
+                }
+                if ( ! (event.jhat.value & SDL_HAT_LEFT) && ! (event.jhat.value & SDL_HAT_RIGHT))
+                {
+                    player[i]->fastSlide = 0;
+                }
+
+                if (event.jhat.value & SDL_HAT_DOWN)
+                {
+                    player[i]->ticks=SDL_GetTicks();
+                    //1 point per cell for a softdrop
+                    if (!player[i]->fastDrop)
+                    {
+                        player[i]->score+=movePieceDown(&player[i]->active,&player[i]->grid);
+                        player[i]->fastDrop=1;
+                    }
+                }
+
+                if (event.jhat.value & SDL_HAT_LEFT)
+                {
+                    player[i]->slideTime = SDL_GetTicks();
+                    if (player[i]->fastSlide == 0)
+                    {
+                        player[i]->fastSlide = -1;
+                        movePieceLeft(&player[i]->active,&player[i]->grid);
+                    }
+                }
+
+                if (event.jhat.value & SDL_HAT_RIGHT)
+                {
+                    player[i]->slideTime = SDL_GetTicks();
+                    if (player[i]->fastSlide == 0)
+                    {
+                        player[i]->fastSlide = 1;
+                        movePieceRight(&player[i]->active,&player[i]->grid);
+                    }
+                }
+            }
+            break;
+
+        case SDL_JOYAXISMOTION:
+//determine which player this button press is assigned to
+            for (i=0; i<4; i++)
+            {
+                if (player[i]->controller.keyboard==event.jbutton.which)
+                    break;
+            }
+            if (i<4)
+            {
+
+                //DOWN
+                if (event.jaxis.axis % 2 == 1 && event.jaxis.value > 3200 )
+                {
+                    player[i]->ticks=SDL_GetTicks();
+                    //1 point per cell for a softdrop
+                    if (!player[i]->fastDrop)
+                    {
+                        player[i]->score+=movePieceDown(&player[i]->active,&player[i]->grid);
+                        player[i]->fastDrop=1;
+                    }
+                }
+
+                //LEFT
+                else if (event.jaxis.axis % 2 == 0 && event.jaxis.value < -3200)
+                {
+                    player[i]->slideTime = SDL_GetTicks();
+                    if (player[i]->fastSlide == 0)
+                    {
+                        player[i]->fastSlide = -1;
+                        movePieceLeft(&player[i]->active,&player[i]->grid);
+                    }
+                }
+
+                //RIGHT
+                else if (event.jaxis.axis % 2 == 0 && event.jaxis.value > 3200)
+                {
+                    player[i]->slideTime = SDL_GetTicks();
+                    if (player[i]->fastSlide == 0)
+                    {
+                        player[i]->fastSlide = 1;
+                        movePieceRight(&player[i]->active,&player[i]->grid);
+                    }
+                }
+
+                //if axis is centered
+
+                else if (event.jaxis.axis%2 == 1 && event.jaxis.value < 3200 && event.jaxis.value > -3200)
+                {
+                    player[i]->fastDrop = 0;
+                }
+                else if (event.jaxis.axis%2 == 0 && event.jaxis.value < 3200 && event.jaxis.value > -3200)
+                {
+                    player[i]->fastSlide = 0;
+                }
+            }
+            break;
+        }
+    }
+    return 0;
 }
 
 //Return 0 if dropping the latest piece has ended the game
