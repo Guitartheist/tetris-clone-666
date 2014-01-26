@@ -547,11 +547,11 @@ int singlePlayerPauseMenu(Player player, SDL_Surface *screen)
                 break;
 
             case SDL_JOYBUTTONDOWN:
-                break;
                 if (event.jbutton.button == player.controller.quit)
                     return 1;
                 else
                     return 0;
+                break;
             }
         }
 }
