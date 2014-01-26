@@ -35,6 +35,9 @@ typedef struct Player
     int startTime;
     int totalTime;
 
+    //0 if player has not set their controls
+    Uint8 isActive;
+
     Controller controller;
 } Player;
 
