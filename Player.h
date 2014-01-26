@@ -40,5 +40,9 @@ typedef struct Player
 
 void drawGame(Player,SDL_Surface*);
 void initPlayer(Player*);
+void configureSinglePlayerControls(Player *player, SDL_Surface *screen);
+int singleControllerProcess(Player *player,SDL_Surface *screen);
+int singlePlayerPauseMenu(Player player, SDL_Surface *screen);
+int scoreDrop(Player *player, SDL_Surface *surface);
 
 #endif // PLAYER_H

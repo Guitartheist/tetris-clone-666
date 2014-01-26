@@ -1,3 +1,5 @@
+#include <SDL/SDL.h>
+
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
@@ -5,7 +7,7 @@
 
 typedef struct Controller
 {
-    Uint8 keyboard; //ID if contoller, KEYBOARD if keyboard
+    Uint8 keyboard; //joystick ID if contoller, KEYBOARD if keyboard
     int rotateLeft;
     int rotateRight;
     int moveDown;
