@@ -764,6 +764,9 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
         SDL_FreeSurface(quad[i]);
     }
 
+    endRect.h = screen->h;
+    endRect.w = screen->w;
+
     SDL_FillRect(screen,&endRect,SDL_MapRGB(screen->format,0,0,0));
     drawString("Configuration Complete!",screen,0,0);
     SDL_Flip(screen);

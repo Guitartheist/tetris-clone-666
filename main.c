@@ -316,6 +316,8 @@ void multiPlayerMenu(SDL_Surface* screen)
                     break;
 
                 case 5:
+                    if (!players[0]->isActive)
+                        configureMultiPlayerControls(players,screen);
                     multiPlayerGame(screen,SPRINT);
                     break;
                 }
@@ -381,6 +383,8 @@ void multiPlayerMenu(SDL_Surface* screen)
                         break;
 
                     case 5:
+                        if (!players[0]->isActive)
+                            configureMultiPlayerControls(players,screen);
                         multiPlayerGame(screen,SPRINT);
                         break;
                     }
@@ -587,6 +591,11 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
     SDL_Flip(window);
 
     SDL_FreeSurface(screen);
+
+    int ticks = SDL_GetTicks();
+
+    while (ticks+3000>SDL_GetTicks());
+        //wait 3 seconds before taking user input
 }
 
 void multiPlayerGame(SDL_Surface* window, enum GameType type)
@@ -645,6 +654,7 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
         for (i=0; i<4; i++)
         {
+
             if (players[i]->isActive)
             {
 
@@ -695,57 +705,58 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
                 }
             }
 
-            // DRAWING STARTS HERE
+        }
 
-            // DRAW BACKGROUNDS
-            SDL_FillRect(window,&windowRect,SDL_MapRGB(window->format,127,127,127));
-            for (i=0; i<4; i++)
+        // DRAWING STARTS HERE
+
+        // DRAW BACKGROUNDS
+        SDL_FillRect(window,&windowRect,SDL_MapRGB(window->format,127,127,127));
+        for (i=0; i<4; i++)
+        {
+            switch (i)
             {
-                switch (i)
-                {
-                case 0:
-                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,200,200,200));
-                    break;
-                case 1:
-                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,127,127,127));
-                    break;
-                case 2:
-                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,127,127,127));
-                    break;
-                case 3:
-                    SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,200,200,200));
-                    break;
-                }
-
-                // DRAW GAME
-
-                if (players[i]->isActive)
-                {
-                    drawGame(*players[i],quad[i]);
-                }
-
-                // DRAW ELAPSED TIME
-
-                switch (type)
-                {
-                case MARATHON:
-                    currentTime = (players[i]->totalTime+(SDL_GetTicks()-players[i]->startTime));
-                    sprintf(scoreString,"%02d:%02d MARATHON",(currentTime/1000)/60,(currentTime/1000)%60);
-                    drawString(scoreString,quad[i],0,0);
-                    break;
-
-                case BLITZ:
-                    sprintf(scoreString,"%02d:%02d BLITZ",(120-(currentTime/1000))/60,(120-(currentTime/1000))%60);
-                    drawString(scoreString,quad[i],0,0);
-                    break;
-
-                case SPRINT:
-                    sprintf(scoreString,"%02d:%02d SPRINT",(currentTime/1000)/60,(currentTime/1000)%60);
-                    drawString(scoreString,quad[i],0,0);
-                    break;
-                }
-                SDL_Flip(quad[i]);
+            case 0:
+                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,200,200,200));
+                break;
+            case 1:
+                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,127,127,127));
+                break;
+            case 2:
+                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,127,127,127));
+                break;
+            case 3:
+                SDL_FillRect(quad[i],&screenRect,SDL_MapRGB(quad[i]->format,200,200,200));
+                break;
             }
+
+            // DRAW GAME
+
+            if (players[i]->isActive)
+            {
+                drawGame(*players[i],quad[i]);
+            }
+
+            // DRAW ELAPSED TIME
+
+            switch (type)
+            {
+            case MARATHON:
+                currentTime = (players[i]->totalTime+(SDL_GetTicks()-players[i]->startTime));
+                sprintf(scoreString,"%02d:%02d MARATHON",(currentTime/1000)/60,(currentTime/1000)%60);
+                drawString(scoreString,quad[i],0,0);
+                break;
+
+            case BLITZ:
+                sprintf(scoreString,"%02d:%02d BLITZ",(120-(currentTime/1000))/60,(120-(currentTime/1000))%60);
+                drawString(scoreString,quad[i],0,0);
+                break;
+
+            case SPRINT:
+                sprintf(scoreString,"%02d:%02d SPRINT",(currentTime/1000)/60,(currentTime/1000)%60);
+                drawString(scoreString,quad[i],0,0);
+                break;
+            }
+            SDL_Flip(quad[i]);
         }
 
         // Update the screen
@@ -823,7 +834,7 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
         }
     }
 
-    // Update the screen
+    // Update the screen for endgame display
     for (i=0; i<4; i++)
     {
         SDL_Flip(quad[i]);
@@ -839,4 +850,9 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
     {
         SDL_FreeSurface(quad[i]);
     }
+
+    int ticks = SDL_GetTicks();
+
+    while (ticks+3000>SDL_GetTicks());
+        //wait 3 seconds before taking user input
 }
