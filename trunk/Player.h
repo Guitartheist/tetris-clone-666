@@ -36,6 +36,8 @@ typedef struct Player
     int totalTime;
 
     //0 if player has not set their controls
+    //1 if player is active
+    //2 if player has been eliminated during play
     Uint8 isActive;
 
     Controller controller;

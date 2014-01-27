@@ -88,6 +88,9 @@ void initPlayer(Player* player)
     player->ticks=SDL_GetTicks();
     player->startTime = SDL_GetTicks();
     player->totalTime = 0;
+
+    if (player->isActive==2)
+        player->isActive=1;
 }
 
 void initControls(Player *player)
@@ -234,6 +237,8 @@ void configureSinglePlayerControls(Player *player, SDL_Surface *screen)
 
     drawString("Configuration Complete",screen,0,0);
     SDL_Flip(screen);
+
+    player->isActive = 1;
 }
 
 int singleControllerProcess(Player *player,SDL_Surface *screen)
@@ -524,6 +529,7 @@ int singleControllerProcess(Player *player,SDL_Surface *screen)
 
         //end joystick handling
     }
+
     return 0;
 }
 
@@ -581,7 +587,7 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
     int done = 0;
     int playerProgress[4]= {0,0,0,0};
     int i;
-    int keys[4][9];
+    int keys[4][7];
 
     for (i=0;i<4;i++)
     {
@@ -611,7 +617,7 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
         done=1;
         for (i=0; i<4; i++)
         {
-            if (playerProgress[i]<9&&playerController[i]>=0)
+            if (playerProgress[i]<7&&playerController[i]>=0)
                 done=0;
             if (playerController[0]<0)
                 done=0;
@@ -637,26 +643,18 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
                 break;
 
             case 4:
-                drawString("Press pause       ",quad[i],0,0);
-                break;
-
-            case 5:
-                drawString("Press quit        ",quad[i],0,0);
-                break;
-
-            case 6:
                 drawString("Press vertical ATK",quad[i],0,0);
                 break;
 
-            case 7:
+            case 5:
                 drawString("Press horizon ATK  ",quad[i],0,0);
                 break;
 
-            case 8:
+            case 6:
                 drawString("Press diagonal ATK",quad[i],0,0);
                 break;
 
-            case 9:
+            case 7:
                 drawString("Waiting on other players...",quad[i],0,0);
                 break;
             }
@@ -706,7 +704,7 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
                         }
                     }
                 }
-                if (playerProgress[i]<9&&i<4)
+                if (playerProgress[i]<7&&i<4)
                 {
                     keys[i][playerProgress[i]]=event.key.keysym.sym;
                     playerProgress[i]++;
@@ -735,7 +733,7 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
                         }
                     }
                 }
-                if (playerProgress[i]<9&&i<4)
+                if (playerProgress[i]<7&&i<4)
                 {
                     keys[i][playerProgress[i]]=event.jbutton.button;
                     playerProgress[i]++;
@@ -752,11 +750,9 @@ void configureMultiPlayerControls(Player *player[4], SDL_Surface *screen)
         player[i]->controller.rotateRight = keys[i][1];
         player[i]->controller.hardDrop = keys[i][2];
         player[i]->controller.hold = keys[i][3];
-        player[i]->controller.pause = keys[i][4];
-        player[i]->controller.quit = keys[i][5];
-        player[i]->controller.attackVertical = keys[i][6];
-        player[i]->controller.attackHorizontal = keys[i][7];
-        player[i]->controller.attackDiagonal = keys[i][8];
+        player[i]->controller.attackVertical = keys[i][4];
+        player[i]->controller.attackHorizontal = keys[i][5];
+        player[i]->controller.attackDiagonal = keys[i][6];
     }
 
     for (i=0; i<4; i++)
@@ -833,22 +829,6 @@ int multiControllerProcess(Player *player[4],SDL_Surface *screen)
 
             if (i<4)
             {
-                if (event.key.keysym.sym == player[i]->controller.quit)
-                {
-                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
-                    if (singlePlayerPauseMenu(*player[i],screen))
-                        return 1;
-                    player[i]->startTime = SDL_GetTicks();
-                }
-
-                else if (event.key.keysym.sym == player[i]->controller.pause)
-                {
-                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
-                    if (singlePlayerPauseMenu(*player[i],screen))
-                        return 1;
-                    player[i]->startTime = SDL_GetTicks();
-                }
-
                 if (event.key.keysym.sym == player[i]->controller.hold) //swap holdpiece
                 {
                     if (!player[i]->swapped)
@@ -918,22 +898,6 @@ int multiControllerProcess(Player *player[4],SDL_Surface *screen)
             }
             if (i<4)
             {
-                if (event.jbutton.button == player[i]->controller.quit)
-                {
-                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
-                    if (singlePlayerPauseMenu(*player[i],screen))
-                        return 1;
-                    player[i]->startTime = SDL_GetTicks();
-                }
-
-                else if (event.jbutton.button == player[i]->controller.pause)
-                {
-                    player[i]->totalTime += SDL_GetTicks() - player[i]->startTime;
-                    if (singlePlayerPauseMenu(*player[i],screen))
-                        return 1;
-                    player[i]->startTime = SDL_GetTicks();
-                }
-
                 if (event.jbutton.button == player[i]->controller.hold) //swap holdpiece
                 {
                     if (!player[i]->swapped)
@@ -1090,7 +1054,10 @@ int scoreDrop(Player *player, SDL_Surface *surface)
 {
     int dropTest = dropPiece(&player->active,&player->grid,surface,&player->score,(player->lines/10)+1);
     if (dropTest<0)
+    {
+        player->isActive=2;
         return 0;
+    }
     player->lines+=dropTest;
     spawnPiece(&player->active,getPiece(player->pieces));
     player->pieces+=1;
