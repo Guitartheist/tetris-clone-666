@@ -7,6 +7,25 @@
 #include "Player.h"
 #include "DrawText.h"
 
+/*
+TODO:
+
+pause timing is wrong in multiplayer games
+
+write combat mode
+
+scoring more than 1 line gives player
+1 piece of ammo per line over 1
+
+a triple removes 1 enemy line from bottom
+a tetris removes 2 enemy lines from bottom
+
+attack button puts 1 line on bottom of enemy
+
+allow players to select blitz or marathon multiplay
+
+*/
+
 //player structs
 Player player1;
 Player player2;
@@ -75,19 +94,25 @@ int main ( int argc, char** argv )
     {
         resetPieceLists();
 
-        drawString(" Marathon - Surive   ",screen,30,screen->h/2-CHARHEIGHT*5);
-        drawString(" Blitz    - 2 minutes",screen,30,screen->h/2-CHARHEIGHT*4);
-        drawString(" Sprint   - 40 lines ",screen,30,screen->h/2-CHARHEIGHT*3);
-        drawString(" Multi-player        ",screen,30,screen->h/2-CHARHEIGHT*2);
-        drawString(" Configure Controls  ",screen,30,screen->h/2-CHARHEIGHT);
-        drawString(" Quit                ",screen,30,screen->h/2);
-        drawString("*",screen,30,screen->h/2-CHARHEIGHT*option);
+        drawString(" Marathon - Surive   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*5);
+        drawString(" Blitz    - 2 minutes",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*4);
+        drawString(" Sprint   - 40 lines ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*3);
+        drawString(" Multiplayer Modes   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*2);
+        drawString(" Configure Controls  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT);
+        drawString(" Quit                ",screen,screen->w/2-CHARWIDTH*10,screen->h/3);
+        drawString("*",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*option);
 
         SDL_Flip(screen);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
+            //determine which single player to attach to an action using
+            //initiator as a Player pointer
+            //i as an iterator
+            Player *initiator=0;
+            int i;
+
             // check for messages
             switch (event.type)
             {
@@ -124,6 +149,24 @@ int main ( int argc, char** argv )
                 break;
 
             case SDL_JOYBUTTONDOWN:
+
+                    for (i=0;i<4;i++)
+                    {
+                        if (players[i]->controller.keyboard==event.jbutton.which)
+                        {
+                            initiator = players[i];
+                            break;
+                        }
+                    }
+                    if (!initiator)
+                    for (i=0;i<4;i++)
+                    {
+                        if (!players[i]->isActive)
+                        {
+                            initiator = players[i];
+                        }
+                    }
+
                 switch (option)
                 {
                 case 0:
@@ -131,7 +174,7 @@ int main ( int argc, char** argv )
                     break;
 
                 case 1:
-                    configureSinglePlayerControls(&player1,screen);
+                    configureSinglePlayerControls(initiator,screen);
                     break;
 
                 case 2:
@@ -139,15 +182,215 @@ int main ( int argc, char** argv )
                     break;
 
                 case 3:
-                    singlePlayerGame(player1,screen,SPRINT);
+                    singlePlayerGame(*initiator,screen,SPRINT);
                     break;
 
                 case 4:
-                    singlePlayerGame(player1,screen,BLITZ);
+                    singlePlayerGame(*initiator,screen,BLITZ);
                     break;
 
                 case 5:
-                    singlePlayerGame(player1,screen,MARATHON);
+                    singlePlayerGame(*initiator,screen,MARATHON);
+                    break;
+                }
+                break;
+
+            case SDL_JOYHATMOTION:
+                if (oldValue != event.jhat.value)
+                    if (event.jhat.value & SDL_HAT_UP)
+                    {
+                        if (option<5)
+                            option++;
+                        else
+                            option = 0;
+                    }
+
+                if (event.jhat.value & SDL_HAT_DOWN)
+                {
+                    if (option<1)
+                        option=5;
+                    else
+                        option--;
+                    break;
+                }
+                oldValue = event.jhat.value;
+                break;
+
+
+            // check for keypresses
+            case SDL_KEYDOWN:
+                // exit if ESCAPE is pressed
+                switch (event.key.keysym.sym)
+                {
+                case SDLK_ESCAPE:
+                    done = 1;
+                    break;
+                case SDLK_UP:
+                    if (option<5)
+                        option++;
+                    else
+                        option = 0;
+                    break;
+
+                case SDLK_DOWN:
+                    if (option<1)
+                        option=5;
+                    else
+                        option--;
+                    break;
+
+                case SDLK_RETURN:
+
+                    for (i=0;i<4;i++)
+                    {
+                        if (players[i]->controller.keyboard==KEYBOARD)
+                        {
+                            initiator = players[i];
+                            break;
+                        }
+                    }
+                    if (!initiator)
+                    for (i=0;i<4;i++)
+                    {
+                        if (!players[i]->isActive)
+                        {
+                            initiator = players[i];
+                        }
+                    }
+
+                    switch (option)
+                    {
+                    case 0:
+                        exit(0);
+                        break;
+
+                    case 1:
+                        configureSinglePlayerControls(&player1,screen);
+                        break;
+
+                    case 2:
+                        multiPlayerMenu(screen);
+                        break;
+
+                    case 3:
+                        singlePlayerGame(player1,screen,SPRINT);
+                        break;
+
+                    case 4:
+                        singlePlayerGame(player1,screen,BLITZ);
+                        break;
+
+                    case 5:
+                        singlePlayerGame(player1,screen,MARATHON);
+                        break;
+                    }
+                    break;
+
+                default:
+                    break;
+
+                }
+            }
+        }
+    }
+
+    //Close joysticks
+
+    for( i=0; i < SDL_NumJoysticks(); i++ )
+    {
+        SDL_JoystickClose(joystick[i]);
+    }
+
+    return 0;
+}
+
+void multiPlayerMenu(SDL_Surface* screen)
+{
+    static int option=4;
+    int oldValue=0;
+    int done=0;
+    while (!done)
+    {
+        resetPieceLists();
+
+        drawString(" Multiplayer Marathon",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*5);
+        drawString(" Multiplayer Blitz   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*4);
+        drawString(" Multiplayer Sprint  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*3);
+        drawString(" Elimination Battle  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*2);
+        drawString(" Configure Controls  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT);
+        drawString(" Back to Main Menu   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3);
+        drawString("*",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*option);
+
+        SDL_Flip(screen);
+
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            // check for messages
+            switch (event.type)
+            {
+            // exit if the window is closed
+            case SDL_QUIT:
+                exit(0);
+                break;
+
+            case SDL_JOYAXISMOTION:
+                //UP
+                if (event.jaxis.axis % 2 == 1 && event.jaxis.value < -3200 )
+                {
+                    if (oldValue > -3200)
+                    {
+                        if (option<5)
+                            option++;
+                        else
+                            option = 0;
+                    }
+                }
+                //DOWN
+                else if (event.jaxis.axis % 2 == 1 && event.jaxis.value > 3200 )
+                {
+                    if (oldValue < 3200)
+                    {
+                        if (option<1)
+                            option=5;
+                        else
+                            option--;
+                    }
+                }
+                oldValue = event.jaxis.value;
+                break;
+
+            case SDL_JOYBUTTONDOWN:
+                switch (option)
+                {
+                case 0:
+                    return;
+                    break;
+
+                case 1:
+                    configureMultiPlayerControls(players,screen);
+                    break;
+
+                case 2:
+
+                    break;
+
+                case 3:
+                    if (!players[0]->isActive)
+                        configureMultiPlayerControls(players,screen);
+                    multiPlayerGame(screen,SPRINT);
+                    break;
+
+                case 4:
+                    if (!players[0]->isActive)
+                        configureMultiPlayerControls(players,screen);
+                    multiPlayerGame(screen,BLITZ);
+                    break;
+
+                case 5:
+                    if (!players[0]->isActive)
+                        configureMultiPlayerControls(players,screen);
+                    multiPlayerGame(screen,MARATHON);
                     break;
                 }
                 break;
@@ -200,192 +443,33 @@ int main ( int argc, char** argv )
                     switch (option)
                     {
                     case 0:
-                        exit(0);
-                        break;
-
-                    case 1:
-                        configureSinglePlayerControls(&player1,screen);
-                        break;
-
-                    case 2:
-                        multiPlayerMenu(screen);
-                        break;
-
-                    case 3:
-                        singlePlayerGame(player1,screen,SPRINT);
-                        break;
-
-                    case 4:
-                        singlePlayerGame(player1,screen,BLITZ);
-                        break;
-
-                    case 5:
-                        singlePlayerGame(player1,screen,MARATHON);
-                        break;
-                    }
-                    break;
-
-                default:
-                    break;
-
-                }
-            }
-        }
-    }
-
-    //Close joysticks
-
-    for( i=0; i < SDL_NumJoysticks(); i++ )
-    {
-        SDL_JoystickClose(joystick[i]);
-    }
-
-    return 0;
-}
-
-void multiPlayerMenu(SDL_Surface* screen)
-{
-    int option=3;
-    int oldValue=0;
-    int done=0;
-    while (!done)
-    {
-        resetPieceLists();
-
-        drawString(" Sprint Race         ",screen,30,screen->h/2-CHARHEIGHT*5);
-        drawString(" Elimination Battle  ",screen,30,screen->h/2-CHARHEIGHT*4);
-        drawString(" Configure Controls  ",screen,30,screen->h/2-CHARHEIGHT*3);
-        drawString(" Back to Main Menu   ",screen,30,screen->h/2-CHARHEIGHT*2);
-        drawString("                     ",screen,30,screen->h/2-CHARHEIGHT);
-        drawString("                     ",screen,30,screen->h/2);
-        drawString("*",screen,30,screen->h/2-CHARHEIGHT*option);
-
-        SDL_Flip(screen);
-
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            // check for messages
-            switch (event.type)
-            {
-            // exit if the window is closed
-            case SDL_QUIT:
-                exit(0);
-                break;
-
-            case SDL_JOYAXISMOTION:
-                //UP
-                if (event.jaxis.axis % 2 == 1 && event.jaxis.value < -3200 )
-                {
-                    if (oldValue > -3200)
-                    {
-
-                        if (option<5)
-                            option++;
-                        else
-                            option = 2;
-                    }
-                }
-                //DOWN
-                else if (event.jaxis.axis % 2 == 1 && event.jaxis.value > 3200 )
-                {
-                    if (oldValue < 3200)
-                    {
-                        if (option<3)
-                            option=5;
-                        else
-                            option--;
-                    }
-                }
-                oldValue = event.jaxis.value;
-                break;
-
-            case SDL_JOYBUTTONDOWN:
-                switch (option)
-                {
-                case 2:
-                    return;
-                    break;
-
-                case 3:
-                    configureMultiPlayerControls(players,screen);
-                    break;
-
-                case 4:
-                    ;
-                    break;
-
-                case 5:
-                    if (!players[0]->isActive)
-                        configureMultiPlayerControls(players,screen);
-                    multiPlayerGame(screen,SPRINT);
-                    break;
-                }
-                break;
-
-            case SDL_JOYHATMOTION:
-                if (oldValue != event.jhat.value)
-                    if (event.jhat.value & SDL_HAT_UP)
-                    {
-                        if (option<5)
-                            option++;
-                        else
-                            option = 2;
-                    }
-
-                if (event.jhat.value & SDL_HAT_DOWN)
-                {
-                    if (option<3)
-                        option=5;
-                    else
-                        option--;
-                    break;
-                }
-                oldValue = event.jhat.value;
-                break;
-
-
-            // check for keypresses
-            case SDL_KEYDOWN:
-                // exit if ESCAPE is pressed
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_ESCAPE:
-                    done = 1;
-                    break;
-                case SDLK_UP:
-                    if (option<5)
-                        option++;
-                    else
-                        option = 2;
-                    break;
-
-                case SDLK_DOWN:
-                    if (option<3)
-                        option=5;
-                    else
-                        option--;
-                    break;
-
-                case SDLK_RETURN:
-                    switch (option)
-                    {
-                    case 2:
                         return;
                         break;
 
-                    case 3:
+                    case 1:
                         configureMultiPlayerControls(players,screen);
                         break;
 
+                    case 2:
+
+                        break;
+
+                    case 3:
+                        if (!players[0]->isActive)
+                            configureMultiPlayerControls(players,screen);
+                        multiPlayerGame(screen,SPRINT);
+                        break;
+
                     case 4:
-                        ;
+                        if (!players[0]->isActive)
+                            configureMultiPlayerControls(players,screen);
+                        multiPlayerGame(screen,BLITZ);
                         break;
 
                     case 5:
                         if (!players[0]->isActive)
                             configureMultiPlayerControls(players,screen);
-                        multiPlayerGame(screen,SPRINT);
+                        multiPlayerGame(screen,MARATHON);
                         break;
                     }
                     break;
@@ -543,51 +627,47 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
 
     } // end main loop
 
-    SDL_Rect endRect = {0,0,BLOCKSIZE*GRIDXSIZE*2,CHARHEIGHT*4};
-
-    SDL_FillRect(screen,&endRect,SDL_MapRGB(screen->format,0,0,0));
+    //SCORECARD DRAWING
 
     switch (type)
     {
     case MARATHON:
         sprintf(scoreString,"Marathon Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
         scoreString[29]='\0';
-        drawString(scoreString,screen,0,0);
+        drawString(scoreString,window,0,0);
         sprintf(scoreString,"with %d points",player.score);
         scoreString[29]='\0';
-        drawString(scoreString,screen,0,CHARHEIGHT);
+        drawString(scoreString,window,0,CHARHEIGHT);
         break;
 
     case BLITZ:
         if (currentTime/1000<120)
         {
-            drawString("Blitz Score: Failure.",screen,0,0);
+            drawString("Blitz Score: Failure.",window,0,0);
         }
         else
         {
             sprintf(scoreString,"Blitz Score: %d",player.score);
             scoreString[29]='\0';
-            drawString(scoreString,screen,0,0);
+            drawString(scoreString,window,0,0);
         }
         break;
 
     case SPRINT:
         if (player.lines<40)
         {
-            drawString("Sprint Score: Failure.",screen,0,0);
+            drawString("Sprint Score: Failure.",window,0,0);
         }
         else
         {
             sprintf(scoreString,"Sprint Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
             scoreString[29]='\0';
-            drawString(scoreString,screen,0,0);
+            drawString(scoreString,window,0,0);
         }
         break;
     }
 
     // Update the screen
-    SDL_Flip(screen);
-    SDL_BlitSurface(screen,&screenRect,window,&singlePlayerRect);
     SDL_Flip(window);
 
     SDL_FreeSurface(screen);
@@ -595,7 +675,7 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
     int ticks = SDL_GetTicks();
 
     while (ticks+3000>SDL_GetTicks());
-        //wait 3 seconds before taking user input
+    //wait 3 seconds before taking user input
 }
 
 void multiPlayerGame(SDL_Surface* window, enum GameType type)
@@ -649,13 +729,20 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
         currentTime = (players[0]->totalTime+(SDL_GetTicks()-players[0]->startTime));
 
         // process user controllers
-        if (multiControllerProcess(players,window))
-            done = 1;
+        multiControllerProcess(players,window);
+
+        done=1;
+
+        for (i=0; i<4; i++)
+        {
+            if (players[i]->isActive==1)
+                done=0;
+        }
 
         for (i=0; i<4; i++)
         {
 
-            if (players[i]->isActive)
+            if (players[i]->isActive==1)
             {
 
                 MSDelay=1000;
@@ -690,7 +777,7 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
                         {
                             if (!scoreDrop(players[i],quad[i]))
                             {
-                                done=1;
+                                players[i]->isActive=2;
                                 break;
                             }
                             players[i]->ticks=SDL_GetTicks();
@@ -731,7 +818,7 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
             // DRAW GAME
 
-            if (players[i]->isActive)
+            if (players[i]->isActive==1)
             {
                 drawGame(*players[i],quad[i]);
             }
@@ -791,46 +878,133 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
     SDL_Rect endRect = {0,0,BLOCKSIZE*GRIDXSIZE*2,CHARHEIGHT*4};
 
+    //SCORECARD SCREEN
+
     for (i=0; i<4; i++)
     {
         SDL_FillRect(quad[i],&endRect,SDL_MapRGB(quad[i]->format,0,0,0));
 
-        switch (type)
+        if (players[i]->isActive)
+
         {
-        case MARATHON:
-            sprintf(scoreString,"Marathon Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
-            scoreString[29]='\0';
-            drawString(scoreString,quad[i],0,0);
-            sprintf(scoreString,"with %d points",players[i]->score);
-            scoreString[29]='\0';
-            drawString(scoreString,quad[i],0,CHARHEIGHT);
-            break;
 
-        case BLITZ:
-            if (currentTime/1000<120)
+            int scoringPosition = 0;
+            int j;
+
+            switch (type)
             {
-                drawString("Blitz Score: Failure.",quad[i],0,0);
-            }
-            else
-            {
-                sprintf(scoreString,"Blitz Score: %d",players[i]->score);
+            case MARATHON:
+                sprintf(scoreString,"Marathon Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
                 scoreString[29]='\0';
                 drawString(scoreString,quad[i],0,0);
-            }
-            break;
-
-        case SPRINT:
-            if (players[i]->lines<40)
-            {
-                drawString("Sprint Score: Failure.",quad[i],0,0);
-            }
-            else
-            {
-                sprintf(scoreString,"Sprint Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
+                sprintf(scoreString,"with %d points",players[i]->score);
                 scoreString[29]='\0';
-                drawString(scoreString,quad[i],0,0);
+                drawString(scoreString,quad[i],0,CHARHEIGHT);
+
+                for (j=0; j<4; j++)
+                {
+                    if (players[i]->score < players[j]->score && i!=j  && players[j]->isActive)
+                        scoringPosition++;
+                }
+                switch (scoringPosition)
+                {
+                case 0:
+                    sprintf(scoreString,"You win!");
+                    break;
+
+                case 1:
+                    sprintf(scoreString,"2nd place.");
+                    break;
+
+                case 2:
+                    sprintf(scoreString,"3rd place.");
+                    break;
+
+                case 3:
+                    sprintf(scoreString,"4th place.");
+                    break;
+                }
+                drawString(scoreString,quad[i],0,CHARHEIGHT*2);
+
+                break;
+
+            case BLITZ:
+                if (currentTime/1000<120)
+                {
+                    drawString("Blitz Score: Failure.",quad[i],0,0);
+                }
+                else
+                {
+                    sprintf(scoreString,"Blitz Score: %d",players[i]->score);
+                    scoreString[29]='\0';
+                    drawString(scoreString,quad[i],0,0);
+                }
+                for (j=0; j<4; j++)
+                {
+                    if (players[i]->score < players[j]->score && i!=j && players[j]->isActive)
+                        scoringPosition++;
+                }
+                switch (scoringPosition)
+                {
+                case 0:
+                    sprintf(scoreString,"You win!");
+                    break;
+
+                case 1:
+                    sprintf(scoreString,"2nd place.");
+                    break;
+
+                case 2:
+                    sprintf(scoreString,"3rd place.");
+                    break;
+
+                case 3:
+                    sprintf(scoreString,"4th place.");
+                    break;
+                }
+                drawString(scoreString,quad[i],0,CHARHEIGHT);
+
+                break;
+
+            case SPRINT:
+                if (players[i]->lines<40)
+                {
+                    drawString("Sprint Score: Failure.",quad[i],0,0);
+                }
+                else
+                {
+                    sprintf(scoreString,"Sprint Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
+                    scoreString[29]='\0';
+                    drawString(scoreString,quad[i],0,0);
+                }
+
+                for (j=0; j<4; j++)
+                {
+                    if (players[i]->lines < players[j]->lines && i!=j && players[j]->isActive)
+                        scoringPosition++;
+                }
+                switch (scoringPosition)
+                {
+                case 0:
+                    sprintf(scoreString,"You finished first!");
+                    break;
+
+                case 1:
+                    sprintf(scoreString,"You finished second.");
+                    break;
+
+                case 2:
+                    sprintf(scoreString,"You finished third.");
+                    break;
+
+                case 3:
+                    sprintf(scoreString,"You finished fourth.");
+                    break;
+                }
+                drawString(scoreString,quad[i],0,CHARHEIGHT);
+                break;
             }
-            break;
+
         }
     }
 
@@ -854,5 +1028,5 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
     int ticks = SDL_GetTicks();
 
     while (ticks+3000>SDL_GetTicks());
-        //wait 3 seconds before taking user input
+    //wait 3 seconds before taking user input
 }
