@@ -1,5 +1,7 @@
 #include "DrawText.h"
+#include "Sound.h"
 #include "Player.h"
+
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -1058,6 +1060,7 @@ int scoreDrop(Player *player, SDL_Surface *surface)
         player->isActive=2;
         return 0;
     }
+    playLockSound();
     player->lines+=dropTest;
     spawnPiece(&player->active,getPiece(player->pieces));
     player->pieces+=1;

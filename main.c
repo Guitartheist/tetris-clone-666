@@ -6,11 +6,10 @@
 #include "Grid.h"
 #include "Player.h"
 #include "DrawText.h"
+#include "Sound.h"
 
 /*
 TODO:
-
-pause timing is wrong in multiplayer games
 
 write combat mode
 
@@ -22,8 +21,6 @@ a tetris removes 2 enemy lines from bottom
 
 attack button puts 1 line on bottom of enemy
 
-allow players to select blitz or marathon multiplay
-
 */
 
 //player structs
@@ -32,6 +29,9 @@ Player player2;
 Player player3;
 Player player4;
 Player *players[4] = {&player1,&player2,&player3,&player4};
+
+//x value of menus
+int menuXoffset = 30;
 
 enum GameType {MARATHON,BLITZ,SPRINT};
 void singlePlayerGame(Player player, SDL_Surface*, enum GameType type);
@@ -44,6 +44,10 @@ int scoreDrop(Player *player, SDL_Surface *surface);
 
 int main ( int argc, char** argv )
 {
+    initSound();
+
+    startMusic();
+
     // seed random number generator
     srand(time(0));
 
@@ -94,13 +98,13 @@ int main ( int argc, char** argv )
     {
         resetPieceLists();
 
-        drawString(" Marathon - Surive   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*5);
-        drawString(" Blitz    - 2 minutes",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*4);
-        drawString(" Sprint   - 40 lines ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*3);
-        drawString(" Multiplayer Modes   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*2);
-        drawString(" Configure Controls  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT);
-        drawString(" Quit                ",screen,screen->w/2-CHARWIDTH*10,screen->h/3);
-        drawString("*",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*option);
+        drawString(" Marathon - Surive   ",screen,menuXoffset,screen->h/3-CHARHEIGHT*5);
+        drawString(" Blitz    - 2 minutes",screen,menuXoffset,screen->h/3-CHARHEIGHT*4);
+        drawString(" Sprint   - 40 lines ",screen,menuXoffset,screen->h/3-CHARHEIGHT*3);
+        drawString(" Multiplayer Modes   ",screen,menuXoffset,screen->h/3-CHARHEIGHT*2);
+        drawString(" Configure Controls  ",screen,menuXoffset,screen->h/3-CHARHEIGHT);
+        drawString(" Quit                ",screen,menuXoffset,screen->h/3);
+        drawString("*",screen,menuXoffset,screen->h/3-CHARHEIGHT*option);
 
         SDL_Flip(screen);
 
@@ -313,13 +317,13 @@ void multiPlayerMenu(SDL_Surface* screen)
     {
         resetPieceLists();
 
-        drawString(" Multiplayer Marathon",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*5);
-        drawString(" Multiplayer Blitz   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*4);
-        drawString(" Multiplayer Sprint  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*3);
-        drawString(" Elimination Battle  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*2);
-        drawString(" Configure Controls  ",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT);
-        drawString(" Back to Main Menu   ",screen,screen->w/2-CHARWIDTH*10,screen->h/3);
-        drawString("*",screen,screen->w/2-CHARWIDTH*10,screen->h/3-CHARHEIGHT*option);
+        drawString(" Multiplayer Marathon",screen,menuXoffset,screen->h/3-CHARHEIGHT*5);
+        drawString(" Multiplayer Blitz   ",screen,menuXoffset,screen->h/3-CHARHEIGHT*4);
+        drawString(" Multiplayer Sprint  ",screen,menuXoffset,screen->h/3-CHARHEIGHT*3);
+        drawString(" Elimination Battle  ",screen,menuXoffset,screen->h/3-CHARHEIGHT*2);
+        drawString(" Configure Controls  ",screen,menuXoffset,screen->h/3-CHARHEIGHT);
+        drawString(" Back to Main Menu   ",screen,menuXoffset,screen->h/3);
+        drawString("*",screen,menuXoffset,screen->h/3-CHARHEIGHT*option);
 
         SDL_Flip(screen);
 
@@ -494,7 +498,7 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
     player.startTime = SDL_GetTicks();
     player.totalTime = 0;
 
-    SDL_Surface *screen = SDL_CreateRGBSurface(SDL_SWSURFACE, BLOCKSIZE*GRIDXSIZE*2, BLOCKSIZE*GRIDYSIZE*2, 32,
+    SDL_Surface *screen = SDL_CreateRGBSurface(SDL_HWSURFACE, BLOCKSIZE*GRIDXSIZE*2, BLOCKSIZE*GRIDYSIZE*2, 32,
                           window->format->Rmask, window->format->Gmask, window->format->Bmask, window->format->Amask);
     if(screen == NULL)
     {
@@ -674,8 +678,11 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
 
     int ticks = SDL_GetTicks();
 
-    while (ticks+3000>SDL_GetTicks());
-    //wait 3 seconds before taking user input
+    //wait 3 seconds after game ends before taking user input
+    SDL_Event e;
+
+    while (ticks+3000>SDL_GetTicks())
+        SDL_PollEvent(&e);
 }
 
 void multiPlayerGame(SDL_Surface* window, enum GameType type)
@@ -705,7 +712,7 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
     for (i=0; i<4; i++)
     {
-        quad[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, BLOCKSIZE*GRIDXSIZE*2, BLOCKSIZE*GRIDYSIZE*2, 32,
+        quad[i] = SDL_CreateRGBSurface(SDL_HWSURFACE, BLOCKSIZE*GRIDXSIZE*2, BLOCKSIZE*GRIDYSIZE*2, 32,
                                        window->format->Rmask, window->format->Gmask, window->format->Bmask, window->format->Amask);
     }
 
@@ -1027,6 +1034,9 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
     int ticks = SDL_GetTicks();
 
-    while (ticks+3000>SDL_GetTicks());
-    //wait 3 seconds before taking user input
+    //wait 3 seconds after game ends before taking user input
+    SDL_Event e;
+
+    while (ticks+3000>SDL_GetTicks())
+        SDL_PollEvent(&e);
 }
