@@ -13,6 +13,8 @@ void playAttackSound();
 
 void startMusic();
 
-void stopMusic();
+void toggleSound();
+
+void toggleMusic();
 
 #endif // SOUND_H

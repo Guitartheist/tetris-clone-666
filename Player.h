@@ -14,6 +14,7 @@ typedef struct Player
     Piece active;
     Piece held;
     Grid grid;
+    Grid attackBuffer;
     Uint8 swapped; //set to 1 when hold is used for the first time
     Uint8 swappable; //set to 0 when hold is used, 1 when hold piece is locked into the grid
 
