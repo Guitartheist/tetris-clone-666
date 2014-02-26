@@ -2,7 +2,7 @@
 
 Mix_Chunk *lockSound = NULL;
 
-static int muteMusic = 1;
+static int muteMusic = 0;
 
 static int muteSound = 0;
 
@@ -21,19 +21,7 @@ void playLockSound()
     if (!muteSound)
     {
         int lockChannel = Mix_PlayChannel(-1,lockSound,0);
-        Mix_Volume(lockChannel,100);
-    }
-}
-
-void playAttackSound()
-{
-    //play attack sound
-    if (!muteSound)
-    {
-        int attackChannel = Mix_PlayChannel(-1,note3,0);
-        Mix_Volume(attackChannel,80);
-        attackChannel = Mix_PlayChannel(-1,note4,0);
-        Mix_Volume(attackChannel,80);
+        Mix_Volume(lockChannel,127);
     }
 }
 
@@ -49,24 +37,34 @@ int getMuteMusic()
 
 void startMusic()
 {
-    if (muteMusic)
+    music=Mix_LoadMUS("sounds/djentris.wav");
+    Mix_PlayMusic(music, -1);
+    Mix_VolumeMusic(99);
+}
+
+void toggleSound()
+{
+    if (muteSound)
     {
-        music=Mix_LoadMUS("sounds/djentris.mp3");
-        Mix_PlayMusic(music, -1);
-        Mix_VolumeMusic(99);
+        muteSound=0;
+        playLockSound();
     }
     else
     {
-        Mix_ResumeMusic();
-        muteMusic=0;
+        muteSound=1;
     }
 }
 
-void stopMusic()
+void toggleMusic()
 {
     if (!muteMusic)
     {
         Mix_PauseMusic();
         muteMusic=1;
+    }
+    else
+    {
+        Mix_ResumeMusic();
+        muteMusic=0;
     }
 }

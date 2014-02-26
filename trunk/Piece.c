@@ -168,7 +168,6 @@ void createPiece(Piece* piece, enum PieceShape type, int x, int y)
 //Perform the operation on a the specified piece
 void rotatePieceRight(Piece* piece, Grid* grid)
 {
-    playMoveSound();
     int i;
     Piece collisionTest;
     int coords[8];
@@ -262,7 +261,6 @@ void rotatePieceRight(Piece* piece, Grid* grid)
 //Perform the operation on a the specified piece
 void rotatePieceLeft(Piece* piece, Grid* grid)
 {
-    playMoveSound();
     int i;
     Piece collisionTest;
     int coords[8];

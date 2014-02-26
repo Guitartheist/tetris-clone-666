@@ -8,21 +8,6 @@
 #include "DrawText.h"
 #include "Sound.h"
 
-/*
-TODO:
-
-write combat mode
-
-scoring more than 1 line gives player
-1 piece of ammo per line over 1
-
-a triple removes 1 enemy line from bottom
-a tetris removes 2 enemy lines from bottom
-
-attack button puts 1 line on bottom of enemy
-
-*/
-
 //player structs
 Player player1;
 Player player2;
@@ -33,14 +18,14 @@ Player *players[4] = {&player1,&player2,&player3,&player4};
 //x value of menus
 int menuXoffset = 30;
 
-enum GameType {MARATHON,BLITZ,SPRINT};
+enum GameType {MARATHON,BLITZ,SPRINT,BATTLE};
 void singlePlayerGame(Player player, SDL_Surface*, enum GameType type);
 
 void multiPlayerMenu(SDL_Surface*);
 void multiPlayerGame(SDL_Surface*,enum GameType type);
 
-//process a dropped piece, return 0 if game is over
-int scoreDrop(Player *player, SDL_Surface *surface);
+void gameOverCountdown(SDL_Surface *window);
+void gameStartCountdown(SDL_Surface *window);
 
 int main ( int argc, char** argv )
 {
@@ -105,6 +90,8 @@ int main ( int argc, char** argv )
         drawString(" Configure Controls  ",screen,menuXoffset,screen->h/3-CHARHEIGHT);
         drawString(" Quit                ",screen,menuXoffset,screen->h/3);
         drawString("*",screen,menuXoffset,screen->h/3-CHARHEIGHT*option);
+
+        drawString("(M)usic (S)ound",screen,0,CHARHEIGHT*4);
 
         SDL_Flip(screen);
 
@@ -243,6 +230,14 @@ int main ( int argc, char** argv )
                         option--;
                     break;
 
+                case SDLK_s:
+                    toggleSound();
+                    break;
+
+                case SDLK_m:
+                    toggleMusic();
+                    break;
+
                 case SDLK_RETURN:
 
                     for (i=0;i<4;i++)
@@ -304,6 +299,8 @@ int main ( int argc, char** argv )
     {
         SDL_JoystickClose(joystick[i]);
     }
+
+    SDL_FreeSurface(screen);
 
     return 0;
 }
@@ -489,6 +486,8 @@ void multiPlayerMenu(SDL_Surface* screen)
 
 void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
 {
+    gameStartCountdown(window);
+
     char scoreString[30];
     int currentTime = 0;
 
@@ -633,6 +632,9 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
 
     //SCORECARD DRAWING
 
+    SDL_FillRect(window,&windowRect,SDL_MapRGB(window->format,127,127,127));
+    SDL_Flip(window);
+
     switch (type)
     {
     case MARATHON:
@@ -671,22 +673,23 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
         break;
     }
 
+    sprintf(scoreString,"and %d lines",player.lines);
+    scoreString[29]='\0';
+    drawString(scoreString,window,0,CHARHEIGHT*2);
+
     // Update the screen
     SDL_Flip(window);
 
-    SDL_FreeSurface(screen);
-
-    int ticks = SDL_GetTicks();
-
     //wait 3 seconds after game ends before taking user input
-    SDL_Event e;
+    gameOverCountdown(window);
 
-    while (ticks+3000>SDL_GetTicks())
-        SDL_PollEvent(&e);
+    SDL_FreeSurface(screen);
 }
 
 void multiPlayerGame(SDL_Surface* window, enum GameType type)
 {
+    gameStartCountdown(window);
+
     initPlayer(&player1);
     initPlayer(&player2);
     initPlayer(&player3);
@@ -1018,6 +1021,12 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
     // Update the screen for endgame display
     for (i=0; i<4; i++)
     {
+        if (players[i]->isActive)
+        {
+            sprintf(scoreString,"%d lines",players[i]->lines);
+            scoreString[29]='\0';
+            drawString(scoreString,quad[i],0,CHARHEIGHT*2);
+        }
         SDL_Flip(quad[i]);
     }
     SDL_BlitSurface(quad[0],&screenRect,window,&playerRect1);
@@ -1027,16 +1036,49 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
     SDL_Flip(window);
 
+    //wait 3 seconds after game ends before taking user input
+    gameOverCountdown(window);
+
     for (i=0; i<4; i++)
     {
         SDL_FreeSurface(quad[i]);
     }
+}
 
+//wait 3 seconds after game ends before taking user input
+void gameOverCountdown(SDL_Surface *window)
+{
+    char scoreString[30];
     int ticks = SDL_GetTicks();
 
-    //wait 3 seconds after game ends before taking user input
     SDL_Event e;
 
     while (ticks+3000>SDL_GetTicks())
+    {
+        sprintf(scoreString,"%10d          ",1+(ticks+3000-SDL_GetTicks())/1000);
+        drawString(scoreString,window,window->w/2-CHARWIDTH*10,window->h/2-CHARHEIGHT);
+        SDL_Flip(window);
         SDL_PollEvent(&e);
+    }
+
+    sprintf(scoreString,"     GAME OVER      ");
+    drawString(scoreString,window,window->w/2-CHARWIDTH*10,window->h/2-CHARHEIGHT);
+    SDL_Flip(window);
+}
+
+//wait 3 seconds before game starts before taking user input
+void gameStartCountdown(SDL_Surface *window)
+{
+    char scoreString[30];
+    int ticks = SDL_GetTicks();
+
+    SDL_Event e;
+
+    while (ticks+3000>SDL_GetTicks())
+    {
+        sprintf(scoreString,"%10d          ",1+(ticks+3000-SDL_GetTicks())/1000);
+        drawString(scoreString,window,window->w/2-CHARWIDTH*10,window->h/2-CHARHEIGHT);
+        SDL_Flip(window);
+        SDL_PollEvent(&e);
+    }
 }

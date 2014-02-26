@@ -19,7 +19,10 @@ typedef struct Grid
 
 void drawGrid(Grid*,SDL_Surface*);
 int scoreLines(Grid*); //clear completey filled x-axis lines, return number of lines cleared
+int battleLines(Grid *grid, Grid *attackBuffer); //clear lines and store them in attackBuffer, return number of lines cleared
+void pushLine(Grid *target, Grid *source); //Remove the bottom line from source and push it up into target
 void clearGrid(Grid*);
 Block dropBlock(Block);
+Block raiseBlock(Block);
 
 #endif // GRID_H

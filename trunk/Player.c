@@ -81,6 +81,7 @@ void initPlayer(Player* player)
     player->lines=0;
     player->score=0;
     clearGrid(&player->grid);
+    clearGrid(&player->attackBuffer);
     createPiece(&player->held,0,BLOCKSIZE,BLOCKSIZE*7.5);
     player->swappable = 1;
     player->swapped = 0;
