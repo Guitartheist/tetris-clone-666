@@ -1055,7 +1055,7 @@ int multiControllerProcess(Player *player[4],SDL_Surface *screen)
 //Spawn the next piece and allow the player to swap hold piece with active piece
 int scoreDrop(Player *player, SDL_Surface *surface)
 {
-    int dropTest = dropPiece(&player->active,&player->grid,surface,&player->score,(player->lines/10)+1);
+    int dropTest = dropPiece(&player->active,&player->grid,&player->attackBuffer,surface,&player->score,(player->lines/10)+1);
     if (dropTest<0)
     {
         player->isActive=2;

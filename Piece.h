@@ -37,7 +37,7 @@ void rotatePieceLeft(Piece*,Grid*);
 void movePieceRight(Piece*,Grid*);
 void movePieceLeft(Piece*,Grid*);
 int movePieceDown(Piece*,Grid*); //return 1 if piece did not collide with highest non-null grid element
-int dropPiece(Piece*,Grid*,SDL_Surface*,int*,int); //return -1 if player has topped out, add appropriate points to score
+int dropPiece(Piece*,Grid*,Grid*,SDL_Surface*,int*,int); //return -1 if player has topped out, add appropriate points to score
 void drawPiece(Piece* const,SDL_Surface*);
 void drawPieceOutline(Piece *const,SDL_Surface*);
 void getPieceCollision(Piece* const,int[8]);
