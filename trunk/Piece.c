@@ -431,7 +431,7 @@ int movePieceDown(Piece* piece, Grid* grid)
 
 //If an operation is possible on the specified grid
 //Perform the operation on the specified piece
-int dropPiece(Piece* piece, Grid* grid,SDL_Surface *screen,int *score,int level)
+int dropPiece(Piece* piece, Grid* grid, Grid* attackBuffer, SDL_Surface *screen,int *score,int level)
 {
     Block block[4];
     int coords[8];
@@ -449,7 +449,7 @@ int dropPiece(Piece* piece, Grid* grid,SDL_Surface *screen,int *score,int level)
         dropColor=RED;
         break;
     case L:
-        dropColor=BLUE;
+        dropColor=ORANGE;
         break;
     case I:
         dropColor=CYAN;
@@ -458,7 +458,7 @@ int dropPiece(Piece* piece, Grid* grid,SDL_Surface *screen,int *score,int level)
         dropColor=YELLOW;
         break;
     case J:
-        dropColor=ORANGE;
+        dropColor=BLUE;
         break;
     case T:
         dropColor=PURPLE;
@@ -484,7 +484,7 @@ int dropPiece(Piece* piece, Grid* grid,SDL_Surface *screen,int *score,int level)
 
     level++;
 
-    switch (lines=scoreLines(grid))
+    switch (lines=battleLines(grid,attackBuffer,coords))
     {
     case 1:
         *score+=100*level;
@@ -545,28 +545,28 @@ void drawPiece(Piece* const piece, SDL_Surface* screen)
         switch (piece->direction)
         {
         case UP:
-            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,BLUE);
-            setBlock(&b,piece->x,piece->y,screen->format,BLUE);
-            setBlock(&c,piece->x,piece->y+BLOCKSIZE,screen->format,BLUE);
-            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,BLUE);
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&b,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&c,piece->x,piece->y+BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,ORANGE);
             break;
         case RIGHT:
-            setBlock(&a,piece->x-BLOCKSIZE,piece->y,screen->format,BLUE);
-            setBlock(&b,piece->x,piece->y,screen->format,BLUE);
-            setBlock(&c,piece->x+BLOCKSIZE,piece->y,screen->format,BLUE);
-            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,BLUE);
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y,screen->format,ORANGE);
+            setBlock(&b,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&c,piece->x+BLOCKSIZE,piece->y,screen->format,ORANGE);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,ORANGE);
             break;
         case DOWN:
-            setBlock(&a,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,BLUE);
-            setBlock(&b,piece->x,piece->y-BLOCKSIZE,screen->format,BLUE);
-            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
-            setBlock(&d,piece->x,piece->y+BLOCKSIZE,screen->format,BLUE);
+            setBlock(&a,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&b,piece->x,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&d,piece->x,piece->y+BLOCKSIZE,screen->format,ORANGE);
             break;
         case LEFT:
-            setBlock(&a,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,BLUE);
-            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,BLUE);
-            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
-            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&a,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,ORANGE);
+            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y,screen->format,ORANGE);
             break;
         }
         break;
@@ -638,28 +638,28 @@ void drawPiece(Piece* const piece, SDL_Surface* screen)
         switch (piece->direction)
         {
         case UP:
-            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,ORANGE);
-            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,ORANGE);
-            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
-            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,BLUE);
+            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,BLUE);
+            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,BLUE);
             break;
         case RIGHT:
-            setBlock(&a,piece->x+BLOCKSIZE,piece->y,screen->format,ORANGE);
-            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,ORANGE);
-            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
-            setBlock(&d,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&a,piece->x+BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&d,piece->x-BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,BLUE);
             break;
         case DOWN:
-            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,ORANGE);
-            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,ORANGE);
-            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
-            setBlock(&d,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&a,piece->x,piece->y-BLOCKSIZE,screen->format,BLUE);
+            setBlock(&b,piece->x,piece->y+BLOCKSIZE,screen->format,BLUE);
+            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y-BLOCKSIZE,screen->format,BLUE);
             break;
         case LEFT:
-            setBlock(&a,piece->x+BLOCKSIZE,piece->y,screen->format,ORANGE);
-            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,ORANGE);
-            setBlock(&c,piece->x,piece->y,screen->format,ORANGE);
-            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,ORANGE);
+            setBlock(&a,piece->x+BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&b,piece->x-BLOCKSIZE,piece->y,screen->format,BLUE);
+            setBlock(&c,piece->x,piece->y,screen->format,BLUE);
+            setBlock(&d,piece->x+BLOCKSIZE,piece->y+BLOCKSIZE,screen->format,BLUE);
             break;
         }
         break;

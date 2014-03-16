@@ -26,12 +26,48 @@ void drawGrid(Grid* toDraw,SDL_Surface* screen)
                 drawBlock( &toDraw->grid[x][y], screen);
     }
 
-    //
+    //Draw horizontal lines
     gridLine.x=GRIDXSIZE*BLOCKSIZE;
     SDL_FillRect(screen,&gridLine,SDL_MapRGB(screen->format,127,127,127));
     gridLine.x=0;
     gridLine.y=GRIDYSIZE*BLOCKSIZE;
     gridLine.w=GRIDXSIZE*BLOCKSIZE;
+    gridLine.h=1;
+    SDL_FillRect(screen,&gridLine,SDL_MapRGB(screen->format,127,127,127));
+    gridLine.y=2*BLOCKSIZE;
+    SDL_FillRect(screen,&gridLine,SDL_MapRGB(screen->format,127,127,127));
+}
+
+void drawAttackGrid(Grid* toDraw,SDL_Surface* screen)
+{
+    int x,y;
+    SDL_Rect gridLine;
+    gridLine.y=0;
+    gridLine.w=1;
+    gridLine.h=GRIDYSIZE*BLOCKSIZE/4;
+
+    SDL_Rect screenRect = {0,0,GRIDXSIZE*BLOCKSIZE/4,GRIDYSIZE*BLOCKSIZE/4};
+    //draw background
+
+    SDL_FillRect(screen,&screenRect,SDL_MapRGB(screen->format,0,0,0));
+
+    //draw blocks
+    for (x=0; x<GRIDXSIZE; x++)
+    {
+        gridLine.x=x*BLOCKSIZE/4;
+        //draw a vertical line
+        SDL_FillRect(screen,&gridLine,SDL_MapRGB(screen->format,127,127,127));
+        for (y=0; y<GRIDYSIZE; y++)
+            if (toDraw->grid[x][y].position.x>=0)
+                drawBlock( &toDraw->grid[x][y], screen);
+    }
+
+    //
+    gridLine.x=GRIDXSIZE*BLOCKSIZE/4;
+    SDL_FillRect(screen,&gridLine,SDL_MapRGB(screen->format,127,127,127));
+    gridLine.x=0;
+    gridLine.y=GRIDYSIZE*BLOCKSIZE/4;
+    gridLine.w=GRIDXSIZE*BLOCKSIZE/4;
     gridLine.h=1;
     SDL_FillRect(screen,&gridLine,SDL_MapRGB(screen->format,127,127,127));
 }
@@ -78,10 +114,24 @@ int scoreLines(Grid* grid)
     return numLines;
 }
 
-int battleLines(Grid *grid, Grid *attackBuffer)
+int battleLines(Grid *grid, Grid *attackBuffer, int coords[8])
 {
     int x,y;
     int numLines=0;
+
+    //drop coordinates down to floor of attackBuffer
+    int lowestY = 20;
+    int i=1;
+    while (i<8)
+    {
+        if (coords[i]<lowestY)
+            lowestY = coords[i];
+        i+=2;
+    }
+    coords[1] += lowestY;
+    coords[3] += lowestY;
+    coords[5] += lowestY;
+    coords[7] += lowestY;
 
     for (y=GRIDYSIZE-1; y>=0; y--)
     {
@@ -104,13 +154,20 @@ int battleLines(Grid *grid, Grid *attackBuffer)
 
             /*
 
+            If numLines>1:
+
             Move attackBuffer lines up by one
 
             Copy cleared game grid line to bottom of attackBuffer
 
+            Always:
+
             Shift all game grid lines above current line down by one
 
             */
+
+            if (numLines > 1)
+            {
 
             int attackY;
 
@@ -128,6 +185,8 @@ int battleLines(Grid *grid, Grid *attackBuffer)
                 attackBuffer->grid[x][GRIDYSIZE-1].position.y=GRIDYSIZE*BLOCKSIZE-BLOCKSIZE;
             }
 
+            }
+
             while (y>0)
             {
                 for (x=0; x<GRIDXSIZE; x++)
@@ -138,6 +197,19 @@ int battleLines(Grid *grid, Grid *attackBuffer)
             //Go back 1 step to account for multiple line clears
             y=oldY+1;
         }
+    }
+
+    //carve out empty blocks in attackBuffer where the scoring piece settled
+    for (i=0;i<numLines;i++)
+    {
+        if (coords[1]==i)
+            attackBuffer->grid[coords[0]][i].position.x=-BLOCKSIZE;
+        if (coords[3]==i)
+            attackBuffer->grid[coords[2]][i].position.x=-BLOCKSIZE;
+        if (coords[5]==i)
+            attackBuffer->grid[coords[4]][i].position.x=-BLOCKSIZE;
+        if (coords[7]==i)
+            attackBuffer->grid[coords[6]][i].position.x=-BLOCKSIZE;
     }
 
     return numLines;

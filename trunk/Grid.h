@@ -1,4 +1,5 @@
 #include "Block.h"
+#include "Piece.h"
 #include <SDL/SDL.h>
 
 #ifndef GRID_H
@@ -18,8 +19,9 @@ typedef struct Grid
 } Grid;
 
 void drawGrid(Grid*,SDL_Surface*);
+void drawAttackGrid(Grid* toDraw,SDL_Surface* screen); //draw a 1/4 scale grid
 int scoreLines(Grid*); //clear completey filled x-axis lines, return number of lines cleared
-int battleLines(Grid *grid, Grid *attackBuffer); //clear lines and store them in attackBuffer, return number of lines cleared
+int battleLines(Grid *grid, Grid *attackBuffer, int coords[8]); //clear lines and store them in attackBuffer, return number of lines cleared
 void pushLine(Grid *target, Grid *source); //Remove the bottom line from source and push it up into target
 void clearGrid(Grid*);
 Block dropBlock(Block);

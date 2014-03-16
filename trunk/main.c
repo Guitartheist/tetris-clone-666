@@ -20,9 +20,11 @@ int menuXoffset = 30;
 
 enum GameType {MARATHON,BLITZ,SPRINT,BATTLE};
 void singlePlayerGame(Player player, SDL_Surface*, enum GameType type);
+void singlePlayerAction(int option,SDL_Surface *);
 
 void multiPlayerMenu(SDL_Surface*);
 void multiPlayerGame(SDL_Surface*,enum GameType type);
+int multiPlayerAction(int option,SDL_Surface *);
 
 void gameOverCountdown(SDL_Surface *window);
 void gameStartCountdown(SDL_Surface *window);
@@ -141,16 +143,16 @@ int main ( int argc, char** argv )
 
             case SDL_JOYBUTTONDOWN:
 
-                    for (i=0;i<4;i++)
+                for (i=0; i<4; i++)
+                {
+                    if (players[i]->controller.keyboard==event.jbutton.which)
                     {
-                        if (players[i]->controller.keyboard==event.jbutton.which)
-                        {
-                            initiator = players[i];
-                            break;
-                        }
+                        initiator = players[i];
+                        break;
                     }
-                    if (!initiator)
-                    for (i=0;i<4;i++)
+                }
+                if (!initiator)
+                    for (i=0; i<4; i++)
                     {
                         if (!players[i]->isActive)
                         {
@@ -158,32 +160,7 @@ int main ( int argc, char** argv )
                         }
                     }
 
-                switch (option)
-                {
-                case 0:
-                    exit(0);
-                    break;
-
-                case 1:
-                    configureSinglePlayerControls(initiator,screen);
-                    break;
-
-                case 2:
-                    multiPlayerMenu(screen);
-                    break;
-
-                case 3:
-                    singlePlayerGame(*initiator,screen,SPRINT);
-                    break;
-
-                case 4:
-                    singlePlayerGame(*initiator,screen,BLITZ);
-                    break;
-
-                case 5:
-                    singlePlayerGame(*initiator,screen,MARATHON);
-                    break;
-                }
+                singlePlayerAction(option,screen);
                 break;
 
             case SDL_JOYHATMOTION:
@@ -240,7 +217,7 @@ int main ( int argc, char** argv )
 
                 case SDLK_RETURN:
 
-                    for (i=0;i<4;i++)
+                    for (i=0; i<4; i++)
                     {
                         if (players[i]->controller.keyboard==KEYBOARD)
                         {
@@ -249,40 +226,15 @@ int main ( int argc, char** argv )
                         }
                     }
                     if (!initiator)
-                    for (i=0;i<4;i++)
-                    {
-                        if (!players[i]->isActive)
+                        for (i=0; i<4; i++)
                         {
-                            initiator = players[i];
+                            if (!players[i]->isActive)
+                            {
+                                initiator = players[i];
+                            }
                         }
-                    }
 
-                    switch (option)
-                    {
-                    case 0:
-                        exit(0);
-                        break;
-
-                    case 1:
-                        configureSinglePlayerControls(&player1,screen);
-                        break;
-
-                    case 2:
-                        multiPlayerMenu(screen);
-                        break;
-
-                    case 3:
-                        singlePlayerGame(player1,screen,SPRINT);
-                        break;
-
-                    case 4:
-                        singlePlayerGame(player1,screen,BLITZ);
-                        break;
-
-                    case 5:
-                        singlePlayerGame(player1,screen,MARATHON);
-                        break;
-                    }
+                    singlePlayerAction(option,screen);
                     break;
 
                 default:
@@ -303,6 +255,36 @@ int main ( int argc, char** argv )
     SDL_FreeSurface(screen);
 
     return 0;
+}
+
+void singlePlayerAction(int option, SDL_Surface *screen)
+{
+    switch (option)
+    {
+    case 0:
+        exit(0);
+        break;
+
+    case 1:
+        configureSinglePlayerControls(&player1,screen);
+        break;
+
+    case 2:
+        multiPlayerMenu(screen);
+        break;
+
+    case 3:
+        singlePlayerGame(player1,screen,SPRINT);
+        break;
+
+    case 4:
+        singlePlayerGame(player1,screen,BLITZ);
+        break;
+
+    case 5:
+        singlePlayerGame(player1,screen,MARATHON);
+        break;
+    }
 }
 
 void multiPlayerMenu(SDL_Surface* screen)
@@ -362,38 +344,7 @@ void multiPlayerMenu(SDL_Surface* screen)
                 break;
 
             case SDL_JOYBUTTONDOWN:
-                switch (option)
-                {
-                case 0:
-                    return;
-                    break;
-
-                case 1:
-                    configureMultiPlayerControls(players,screen);
-                    break;
-
-                case 2:
-
-                    break;
-
-                case 3:
-                    if (!players[0]->isActive)
-                        configureMultiPlayerControls(players,screen);
-                    multiPlayerGame(screen,SPRINT);
-                    break;
-
-                case 4:
-                    if (!players[0]->isActive)
-                        configureMultiPlayerControls(players,screen);
-                    multiPlayerGame(screen,BLITZ);
-                    break;
-
-                case 5:
-                    if (!players[0]->isActive)
-                        configureMultiPlayerControls(players,screen);
-                    multiPlayerGame(screen,MARATHON);
-                    break;
-                }
+                if (multiPlayerAction(option,screen)) return;
                 break;
 
             case SDL_JOYHATMOTION:
@@ -433,6 +384,14 @@ void multiPlayerMenu(SDL_Surface* screen)
                         option = 0;
                     break;
 
+                case SDLK_s:
+                    toggleSound();
+                    break;
+
+                case SDLK_m:
+                    toggleMusic();
+                    break;
+
                 case SDLK_DOWN:
                     if (option<1)
                         option=5;
@@ -441,38 +400,7 @@ void multiPlayerMenu(SDL_Surface* screen)
                     break;
 
                 case SDLK_RETURN:
-                    switch (option)
-                    {
-                    case 0:
-                        return;
-                        break;
-
-                    case 1:
-                        configureMultiPlayerControls(players,screen);
-                        break;
-
-                    case 2:
-
-                        break;
-
-                    case 3:
-                        if (!players[0]->isActive)
-                            configureMultiPlayerControls(players,screen);
-                        multiPlayerGame(screen,SPRINT);
-                        break;
-
-                    case 4:
-                        if (!players[0]->isActive)
-                            configureMultiPlayerControls(players,screen);
-                        multiPlayerGame(screen,BLITZ);
-                        break;
-
-                    case 5:
-                        if (!players[0]->isActive)
-                            configureMultiPlayerControls(players,screen);
-                        multiPlayerGame(screen,MARATHON);
-                        break;
-                    }
+                    if (multiPlayerAction(option,screen)) return;
                     break;
 
                 default:
@@ -482,6 +410,44 @@ void multiPlayerMenu(SDL_Surface* screen)
             }
         }
     }
+}
+
+//Return 0 if player chooses a multi-player action, 1 if player returns to main menu
+int multiPlayerAction(int option, SDL_Surface *screen)
+{
+    switch (option)
+    {
+    case 0:
+        return 1;
+        break;
+
+    case 1:
+        configureMultiPlayerControls(players,screen);
+        break;
+
+    case 2:
+
+        break;
+
+    case 3:
+        if (!players[0]->isActive)
+            configureMultiPlayerControls(players,screen);
+        multiPlayerGame(screen,SPRINT);
+        break;
+
+    case 4:
+        if (!players[0]->isActive)
+            configureMultiPlayerControls(players,screen);
+        multiPlayerGame(screen,BLITZ);
+        break;
+
+    case 5:
+        if (!players[0]->isActive)
+            configureMultiPlayerControls(players,screen);
+        multiPlayerGame(screen,MARATHON);
+        break;
+    }
+    return 0;
 }
 
 void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
@@ -515,7 +481,7 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
 
     //MS delay for fast drop or slide
     const int dropWait = 50;
-    const int slideWait = 100;
+    const int slideWait = 140;
 
     // program main loop
     Uint8 done = 0;
@@ -605,6 +571,11 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
             sprintf(scoreString,"%02d:%02d SPRINT",(currentTime/1000)/60,(currentTime/1000)%60);
             drawString(scoreString,screen,0,0);
             break;
+
+        case BATTLE:
+            sprintf(scoreString,"%02d:%02d BATTLE",(currentTime/1000)/60,(currentTime/1000)%60);
+            drawString(scoreString,screen,0,0);
+            break;
         }
 
         // Update the screen
@@ -614,6 +585,9 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
 
         switch (type)
         {
+        case BATTLE:
+            break;
+
         case MARATHON:
             break;
 
@@ -637,6 +611,7 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
 
     switch (type)
     {
+    case BATTLE:
     case MARATHON:
         sprintf(scoreString,"Marathon Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
         scoreString[29]='\0';
@@ -728,7 +703,7 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
     //MS delay for fast drop or slide
     const int dropWait = 50;
-    const int slideWait = 100;
+    const int slideWait = 140;
 
     // program main loop
     Uint8 done = 0;
@@ -852,6 +827,11 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
                 sprintf(scoreString,"%02d:%02d SPRINT",(currentTime/1000)/60,(currentTime/1000)%60);
                 drawString(scoreString,quad[i],0,0);
                 break;
+
+            case BATTLE:
+                sprintf(scoreString,"%02d:%02d BATTLE",(currentTime/1000)/60,(currentTime/1000)%60);
+                drawString(scoreString,quad[i],0,0);
+                break;
             }
             SDL_Flip(quad[i]);
         }
@@ -865,6 +845,16 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
         switch (type)
         {
+        case BATTLE:
+            done = 1;
+            int activePlayers = 0;
+            for (i=0; i<4; i++)
+                if (players[i]->isActive==1)
+                    activePlayers++;
+            if (activePlayers > 1)
+                done = 0;
+            break;
+
         case MARATHON:
             break;
 
@@ -903,6 +893,21 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 
             switch (type)
             {
+            case BATTLE:
+                sprintf(scoreString,"Battle Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
+                scoreString[29]='\0';
+                drawString(scoreString,quad[i],0,0);
+                sprintf(scoreString,"with %d points",players[i]->score);
+                scoreString[29]='\0';
+                drawString(scoreString,quad[i],0,CHARHEIGHT);
+
+                if (players[i]->isActive==1)
+                    sprintf(scoreString,"You win!");
+                else
+                    sprintf(scoreString,"You fail.");
+                drawString(scoreString,quad[i],0,CHARHEIGHT*2);
+                break;
+
             case MARATHON:
                 sprintf(scoreString,"Marathon Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
                 scoreString[29]='\0';
