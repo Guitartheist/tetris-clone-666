@@ -53,6 +53,12 @@ void drawGame(Player player, SDL_Surface *screen)
     drawString("Lines:",screen,xOffset,CHARHEIGHT*4);
     sprintf(scoreString,"%i",player.lines);
     drawString(scoreString,screen,xOffset,CHARHEIGHT*5);
+    if (player.attackLines)
+    {
+        drawString("Attacks:",screen,xOffset,CHARHEIGHT*6);
+        sprintf(scoreString,"%i",player.attackLines);
+        drawString(scoreString,screen,xOffset,CHARHEIGHT*7);
+    }
 
     //Draw hold piece information
 
@@ -79,9 +85,9 @@ void initPlayer(Player* player)
     spawnPiece(&player->active,getPiece(0));
     player->pieces=1;
     player->lines=0;
+    player->attackLines=0;
     player->score=0;
     clearGrid(&player->grid);
-    clearGrid(&player->attackBuffer);
     createPiece(&player->held,0,BLOCKSIZE,BLOCKSIZE*7.5);
     player->swappable = 1;
     player->swapped = 0;
@@ -889,6 +895,72 @@ int multiControllerProcess(Player *player[4],SDL_Surface *screen)
                     }
                     player[i]->ticks=SDL_GetTicks();
                 }
+                else if (event.key.keysym.sym == player[i]->controller.attackDiagonal)
+                {
+                    if (player[i]->attackLines)
+                    {
+                        player[i]->attackLines-=1;
+                        switch (i)
+                        {
+                        case 0:
+                            pushLine(&player[3]->grid,screen);
+                            break;
+                        case 1:
+                            pushLine(&player[2]->grid,screen);
+                            break;
+                        case 2:
+                            pushLine(&player[1]->grid,screen);
+                            break;
+                        case 3:
+                            pushLine(&player[0]->grid,screen);
+                            break;
+                        }
+                    }
+                }
+                else if (event.key.keysym.sym == player[i]->controller.attackVertical)
+                {
+                    if (player[i]->attackLines)
+                    {
+                        player[i]->attackLines-=1;
+                        switch (i)
+                        {
+                        case 0:
+                            pushLine(&player[2]->grid,screen);
+                            break;
+                        case 1:
+                            pushLine(&player[3]->grid,screen);
+                            break;
+                        case 2:
+                            pushLine(&player[0]->grid,screen);
+                            break;
+                        case 3:
+                            pushLine(&player[1]->grid,screen);
+                            break;
+                        }
+                    }
+                }
+                else if (event.key.keysym.sym == player[i]->controller.attackHorizontal)
+                {
+                    if (player[i]->attackLines)
+                    {
+                        player[i]->attackLines-=1;
+                        switch (i)
+                        {
+                        case 0:
+                            pushLine(&player[1]->grid,screen);
+                            break;
+                        case 1:
+                            pushLine(&player[0]->grid,screen);
+                            break;
+                        case 2:
+                            pushLine(&player[3]->grid,screen);
+                            break;
+                        case 3:
+                            pushLine(&player[2]->grid,screen);
+                            break;
+                        }
+                    }
+                }
             }
             break;
 
@@ -932,6 +1004,72 @@ int multiControllerProcess(Player *player[4],SDL_Surface *screen)
                         return 1;
                     }
                     player[i]->ticks=SDL_GetTicks();
+                }
+                else if (event.jbutton.button == player[i]->controller.attackDiagonal)
+                {
+                    if (player[i]->attackLines)
+                    {
+                        player[i]->attackLines-=1;
+                        switch (i)
+                        {
+                        case 0:
+                            pushLine(&player[3]->grid,screen);
+                            break;
+                        case 1:
+                            pushLine(&player[2]->grid,screen);
+                            break;
+                        case 2:
+                            pushLine(&player[1]->grid,screen);
+                            break;
+                        case 3:
+                            pushLine(&player[0]->grid,screen);
+                            break;
+                        }
+                    }
+                }
+                else if (event.jbutton.button == player[i]->controller.attackVertical)
+                {
+                    if (player[i]->attackLines)
+                    {
+                        player[i]->attackLines-=1;
+                        switch (i)
+                        {
+                        case 0:
+                            pushLine(&player[2]->grid,screen);
+                            break;
+                        case 1:
+                            pushLine(&player[3]->grid,screen);
+                            break;
+                        case 2:
+                            pushLine(&player[0]->grid,screen);
+                            break;
+                        case 3:
+                            pushLine(&player[1]->grid,screen);
+                            break;
+                        }
+                    }
+                }
+                else if (event.jbutton.button == player[i]->controller.attackHorizontal)
+                {
+                    if (player[i]->attackLines)
+                    {
+                        player[i]->attackLines-=1;
+                        switch (i)
+                        {
+                        case 0:
+                            pushLine(&player[1]->grid,screen);
+                            break;
+                        case 1:
+                            pushLine(&player[0]->grid,screen);
+                            break;
+                        case 2:
+                            pushLine(&player[3]->grid,screen);
+                            break;
+                        case 3:
+                            pushLine(&player[2]->grid,screen);
+                            break;
+                        }
+                    }
                 }
             }
             break;
@@ -1055,7 +1193,7 @@ int multiControllerProcess(Player *player[4],SDL_Surface *screen)
 //Spawn the next piece and allow the player to swap hold piece with active piece
 int scoreDrop(Player *player, SDL_Surface *surface)
 {
-    int dropTest = dropPiece(&player->active,&player->grid,&player->attackBuffer,surface,&player->score,(player->lines/10)+1);
+    int dropTest = dropPiece(&player->active,&player->grid,surface,&player->score,(player->lines/10)+1);
     if (dropTest<0)
     {
         player->isActive=2;
@@ -1063,6 +1201,10 @@ int scoreDrop(Player *player, SDL_Surface *surface)
     }
     playLockSound();
     player->lines+=dropTest;
+    if (dropTest>1)
+    {
+        player->attackLines+=dropTest-1;
+    }
     spawnPiece(&player->active,getPiece(player->pieces));
     player->pieces+=1;
     player->swappable=1;

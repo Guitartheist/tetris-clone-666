@@ -426,7 +426,9 @@ int multiPlayerAction(int option, SDL_Surface *screen)
         break;
 
     case 2:
-
+        if (!players[0]->isActive)
+            configureMultiPlayerControls(players,screen);
+        multiPlayerGame(screen,BATTLE);
         break;
 
     case 3:
@@ -540,6 +542,9 @@ void singlePlayerGame(Player player, SDL_Surface* window, enum GameType type)
                 player.ticks=SDL_GetTicks();
             }
         }
+
+        //never display attackLines in single player mode
+        player.attackLines=0;
 
         // DRAWING STARTS HERE
 
@@ -713,6 +718,15 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
         //update currentTime
         currentTime = (players[0]->totalTime+(SDL_GetTicks()-players[0]->startTime));
 
+        //prevent attacks in modes other than battle
+        if (type!=BATTLE)
+        {
+            for (i=0; i<4; i++)
+            {
+                players[i]->attackLines=0;
+            }
+        }
+
         // process user controllers
         multiControllerProcess(players,window);
 
@@ -777,6 +791,15 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
                 }
             }
 
+        }
+
+        //prevent attacks in modes other than battle
+        if (type!=BATTLE)
+        {
+            for (i=0; i<4; i++)
+            {
+                players[i]->attackLines=0;
+            }
         }
 
         // DRAWING STARTS HERE
@@ -894,18 +917,11 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
             switch (type)
             {
             case BATTLE:
-                sprintf(scoreString,"Battle Score: %02d:%02d.%02d",(currentTime/1000)/60,(currentTime/1000)%60,currentTime%100);
-                scoreString[29]='\0';
-                drawString(scoreString,quad[i],0,0);
-                sprintf(scoreString,"with %d points",players[i]->score);
-                scoreString[29]='\0';
-                drawString(scoreString,quad[i],0,CHARHEIGHT);
-
                 if (players[i]->isActive==1)
                     sprintf(scoreString,"You win!");
                 else
                     sprintf(scoreString,"You fail.");
-                drawString(scoreString,quad[i],0,CHARHEIGHT*2);
+                drawString(scoreString,quad[i],0,0);
                 break;
 
             case MARATHON:

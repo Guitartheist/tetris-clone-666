@@ -431,7 +431,7 @@ int movePieceDown(Piece* piece, Grid* grid)
 
 //If an operation is possible on the specified grid
 //Perform the operation on the specified piece
-int dropPiece(Piece* piece, Grid* grid, Grid* attackBuffer, SDL_Surface *screen,int *score,int level)
+int dropPiece(Piece* piece, Grid* grid, SDL_Surface *screen,int *score,int level)
 {
     Block block[4];
     int coords[8];
@@ -484,7 +484,7 @@ int dropPiece(Piece* piece, Grid* grid, Grid* attackBuffer, SDL_Surface *screen,
 
     level++;
 
-    switch (lines=battleLines(grid,attackBuffer,coords))
+    switch (lines=scoreLines(grid))
     {
     case 1:
         *score+=100*level;
