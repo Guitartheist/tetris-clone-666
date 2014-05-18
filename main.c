@@ -670,14 +670,12 @@ void multiPlayerGame(SDL_Surface* window, enum GameType type)
 {
     gameStartCountdown(window);
 
-    initPlayer(&player1);
-    initPlayer(&player2);
-    initPlayer(&player3);
-    initPlayer(&player4);
-
     char scoreString[30];
     int currentTime = 0;
     int i;
+
+    for (i=0; i<4; i++)
+        initPlayer(players[i]);
 
     for (i=0; i<4; i++)
     {
